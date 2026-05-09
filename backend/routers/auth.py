@@ -52,6 +52,7 @@ class LoginRequest(BaseModel):
 # ── Routes ────────────────────────────────────────────────────────────────────
 @router.post("/register", status_code=201)
 def register(req: RegisterRequest):
+    print(f"DEBUG: Register attempt for {req.email}")
     conn = get_connection()
     try:
         user_id = str(uuid.uuid4())
@@ -59,9 +60,11 @@ def register(req: RegisterRequest):
         d_name = req.displayName or req.email.split("@")[0]
         
         if settings.USE_POSTGRES:
+            print("DEBUG: Using PostgreSQL")
             cur = conn.cursor()
             cur.execute("SELECT id FROM users WHERE email = %s", (req.email.lower(),))
             if cur.fetchone():
+                print("DEBUG: Email already exists")
                 raise HTTPException(status_code=409, detail="Email already registered")
             
             cur.execute(
@@ -71,15 +74,21 @@ def register(req: RegisterRequest):
             conn.commit()
             cur.close()
         else:
+            print("DEBUG: Using SQLite")
             cur = conn.cursor()
             existing = cur.execute("SELECT id FROM users WHERE email = ?", (req.email.lower(),)).fetchone()
             if existing:
+                print("DEBUG: Email already exists")
                 raise HTTPException(status_code=409, detail="Email already registered")
             cur.execute(
                 "INSERT INTO users (id, email, displayName, password_hash) VALUES (?,?,?,?)",
                 (user_id, req.email.lower(), d_name, hashed)
             )
             conn.commit()
+        print("DEBUG: Registration successful")
+    except Exception as e:
+        print(f"DEBUG: Registration ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
     finally:
         conn.close()
         

@@ -20,21 +20,10 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-import os
-allowed_origins = [
-    "http://localhost:5173",
-    "http://localhost:3000",
-    "https://cybersphere.vercel.app",
-]
-
-# Add production URL from environment if exists
-prod_url = os.getenv("FRONTEND_URL")
-if prod_url:
-    allowed_origins.append(prod_url)
-
+# TEMPORARY: Allow all origins to debug connectivity
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=allowed_origins,
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
