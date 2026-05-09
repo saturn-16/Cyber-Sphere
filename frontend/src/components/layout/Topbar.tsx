@@ -12,7 +12,7 @@ const pageTitles: Record<string, { title: string; subtitle: string }> = {
 
 export default function Topbar() {
   const location = useLocation();
-  const { user } = useAuthStore();
+  const {} = useAuthStore();
   const page = pageTitles[location.pathname] || { title: 'CyberSphere', subtitle: '' };
 
   return (
