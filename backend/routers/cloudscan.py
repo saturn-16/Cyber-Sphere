@@ -14,18 +14,76 @@ from config import settings
 router = APIRouter()
 
 VULN_DEFINITIONS = [
-    {"id":"v1","severity":"critical","title":"Exposed .env File","description":"/.env accessible publicly — may contain API keys and database credentials.","fix":"Restrict .env access in nginx/Apache config with deny all."},
-    {"id":"v2","severity":"critical","title":"Exposed .git Directory","description":"/.git/ directory publicly accessible, leaking source code.","fix":"Block /.git/ access in your server configuration."},
-    {"id":"v3","severity":"high","title":"Missing Content-Security-Policy","description":"No CSP header — XSS attacks are unmitigated.","fix":"Add Content-Security-Policy header with strict directives."},
-    {"id":"v4","severity":"high","title":"Missing X-Frame-Options","description":"Page embeddable in iframes — clickjacking risk.","fix":"Set X-Frame-Options: DENY or SAMEORIGIN."},
-    {"id":"v5","severity":"high","title":"Insecure HTTP Protocol","description":"Site serves over HTTP without HTTPS redirect.","fix":"Configure SSL/TLS and force HTTPS redirect."},
-    {"id":"v6","severity":"medium","title":"CORS Misconfiguration","description":"Access-Control-Allow-Origin: * allows any origin.","fix":"Restrict CORS to known trusted origins only."},
-    {"id":"v7","severity":"medium","title":"Missing HSTS Header","description":"HTTP Strict Transport Security not enforced.","fix":"Add Strict-Transport-Security: max-age=31536000; includeSubDomains."},
-    {"id":"v8","severity":"medium","title":"Open Admin Panel","description":"/admin or /wp-admin accessible without IP restriction.","fix":"Restrict admin access by IP whitelist or VPN."},
-    {"id":"v9","severity":"low","title":"Server Version Disclosure","description":"Server header exposes software version.","fix":"Configure server to suppress version in headers."},
-    {"id":"v10","severity":"low","title":"Missing X-Content-Type-Options","description":"MIME-type sniffing not disabled.","fix":"Add X-Content-Type-Options: nosniff header."},
-    {"id":"v11","severity":"info","title":"Firebase Config Exposed","description":"Firebase API keys found in public JS bundle.","fix":"Use Firebase Security Rules and server-side auth."},
-    {"id":"v12","severity":"info","title":"API Keys in Source","description":"Potential API keys in public JavaScript files.","fix":"Move all secrets to server-side environment variables."},
+    {
+        "id":"v1",
+        "severity":"critical",
+        "title":"Exposed 'Secret Notebook' (.env)",
+        "description":"Your website's private 'Secret Notebook' is visible to the public. This file contains the master keys to your database and private services. Anyone who sees this can potentially take control of your entire system.",
+        "fix":"Tell your developer to 'Deny All' access to the .env file in the server settings."
+    },
+    {
+        "id":"v2",
+        "severity":"critical",
+        "title":"Exposed Source Code (.git)",
+        "description":"Your website is accidentally sharing its blueprints (.git folder) with the world. A hacker could study these blueprints to find a way to break in or steal your unique code.",
+        "fix":"Block access to the /.git/ folder in your web server configuration immediately."
+    },
+    {
+        "id":"v3",
+        "severity":"high",
+        "title":"Missing Digital Guardrails (CSP)",
+        "description":"Your website is missing its 'Digital Guardrails' (Content-Security-Policy). Without these, a hacker could inject malicious scripts into your site that steal your users' information.",
+        "fix":"Add a Content-Security-Policy header to your website to tell the browser which scripts are safe to run."
+    },
+    {
+        "id":"v4",
+        "severity":"high",
+        "title":"Clickjacking Risk (X-Frame)",
+        "description":"Your website allows other websites to 'frame' it. This means a malicious site could put your website in an invisible box and trick your users into clicking buttons they didn't mean to.",
+        "fix":"Set the X-Frame-Options header to 'DENY' or 'SAMEORIGIN' to prevent your site from being embedded elsewhere."
+    },
+    {
+        "id":"v5",
+        "severity":"high",
+        "title":"Unsecured Connection (HTTP)",
+        "description":"Your website is using an old, 'unlocked' connection (HTTP). Information sent between your users and your site can be seen by anyone on the same Wi-Fi network.",
+        "fix":"Install an SSL certificate and force the website to use the 'locked' HTTPS connection."
+    },
+    {
+        "id":"v6",
+        "severity":"medium",
+        "title":"Loose Door Policy (CORS)",
+        "description":"Your website has a 'Loose Door Policy' that allows any other website in the world to request data from it. This is like leaving your office door open for anyone to walk in.",
+        "fix":"Restrict your CORS settings so that only your trusted websites are allowed to request data."
+    },
+    {
+        "id":"v7",
+        "severity":"medium",
+        "title":"Missing Forced Security (HSTS)",
+        "description":"Your website doesn't strictly force users to use a secure connection. A hacker could trick a user's browser into switching back to an insecure connection.",
+        "fix":"Enable the HSTS header to tell browsers to ALWAYS use a secure connection for your site."
+    },
+    {
+        "id":"v8",
+        "severity":"medium",
+        "title":"Visible Admin Entrance",
+        "description":"The 'Staff Entrance' to your website (/admin) is visible to everyone. While it may be locked with a password, it's better to hide the door entirely from the public.",
+        "fix":"Restrict access to your admin panels so only your specific IP address or a VPN can see them."
+    },
+    {
+        "id":"v9",
+        "severity":"low",
+        "title":"Server Tattling (Server Header)",
+        "description":"Your web server is 'tattling' on itself by telling everyone exactly what software and version it is running. This helps hackers find specific weaknesses in that software.",
+        "fix":"Configure your server to hide its version information from the public headers."
+    },
+    {
+        "id":"v10",
+        "severity":"low",
+        "title":"Content Mismatch Risk",
+        "description":"Your website doesn't tell browsers to be strict about file types. This could allow a hacker to trick a browser into running a malicious file disguised as an image.",
+        "fix":"Add the 'X-Content-Type-Options: nosniff' header to your website."
+    },
 ]
 
 import requests
@@ -145,6 +203,28 @@ def scan_website(req: ScanRequest, current_user: dict = Depends(get_current_user
     penalty = sum(penalties.get(v["severity"], 0) for v in detected)
     score = max(5, 100 - penalty)
 
+    # ── AI Security Summary ──────────────────────────────────────────────────
+    ai_summary = "AI analysis unavailable."
+    if settings.USE_GEMINI:
+        try:
+            print(f"DEBUG: Generating AI summary for scan on {req.domain}...")
+            import google.generativeai as genai
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            model = genai.GenerativeModel('gemini-2.5-flash')
+            
+            issues_text = ", ".join([v["title"] for v in detected]) or "No major issues"
+            prompt = f"""As a cybersecurity expert, explain the following scan results for the website "{req.domain}" in simple, non-technical language. 
+The scan found these issues: {issues_text}.
+The overall security score is {score}/100.
+Explain what this means for a business owner, how risky it is, and what they should do next in 3 short, comforting but professional sentences."""
+            
+            ai_resp = model.generate_content(prompt)
+            ai_summary = ai_resp.text
+            print("DEBUG: AI summary SUCCESSFUL")
+        except Exception as e:
+            print(f"DEBUG: CloudScan AI ERROR: {str(e)}")
+            ai_summary = f"Could not generate AI summary: {str(e)}"
+
     result = {
         "id": str(uuid.uuid4()),
         "domain": req.domain,
@@ -152,6 +232,7 @@ def scan_website(req: ScanRequest, current_user: dict = Depends(get_current_user
         "vulnerabilities": vulns,
         "sslValid": ssl_valid,
         "sslExpiry": ssl_expiry,
+        "aiAnalysis": ai_summary,
         "responseTime": random.randint(80, 600),
         "timestamp": datetime.utcnow().isoformat(),
     }
