@@ -28,9 +28,85 @@ VULN_DEFINITIONS = [
     {"id":"v12","severity":"info","title":"API Keys in Source","description":"Potential API keys in public JavaScript files.","fix":"Move all secrets to server-side environment variables."},
 ]
 
+import requests
+
+def real_scan(domain: str) -> list[dict]:
+    """Perform real security probes on the target domain."""
+    base_url = domain if "://" in domain else f"https://{domain}"
+    vulns = []
+    
+    try:
+        # 1. Fetch main page and headers
+        headers = {
+            'User-Agent': 'CyberSphere-Security-Scanner/1.0 (+https://cybersphere.vercel.app)'
+        }
+        response = requests.get(base_url, timeout=10, headers=headers, allow_redirects=True)
+        resp_headers = response.headers
+        
+        # 2. Check Paths (Sensitive Files)
+        # We check a few critical paths
+        for path, v_id in [("/.env", "v1"), ("/.git/config", "v2"), ("/admin", "v8")]:
+            try:
+                p_url = base_url.rstrip("/") + path
+                p_res = requests.get(p_url, timeout=5, headers=headers)
+                # If we get a 200 and some content, it's likely exposed
+                detected = p_res.status_code == 200 and len(p_res.text) > 10
+            except:
+                detected = False
+            
+            # Find definition and add
+            v_def = next((v for v in VULN_DEFINITIONS if v["id"] == v_id), None)
+            if v_def: vulns.append({**v_def, "detected": detected})
+
+        # 3. Check Headers
+        header_checks = [
+            ("Content-Security-Policy", "v3"),
+            ("X-Frame-Options", "v4"),
+            ("Strict-Transport-Security", "v7"),
+            ("X-Content-Type-Options", "v10"),
+        ]
+        
+        for h_name, v_id in header_checks:
+            detected = h_name not in resp_headers
+            v_def = next((v for v in VULN_DEFINITIONS if v["id"] == v_id), None)
+            if v_def: vulns.append({**v_def, "detected": detected})
+
+        # 4. Check for Server Disclosure
+        server_header = resp_headers.get("Server", "")
+        detected_v9 = any(char.isdigit() for char in server_header) # If it has numbers, it likely has a version
+        v_def_v9 = next((v for v in VULN_DEFINITIONS if v["id"] == "v9"), None)
+        if v_def_v9: vulns.append({**v_def_v9, "detected": detected_v9})
+
+        # 5. Protocol Check
+        detected_v5 = base_url.startswith("http://")
+        v_def_v5 = next((v for v in VULN_DEFINITIONS if v["id"] == "v5"), None)
+        if v_def_v5: vulns.append({**v_def_v5, "detected": detected_v5})
+
+        # 6. CORS Check
+        cors = resp_headers.get("Access-Control-Allow-Origin", "")
+        detected_v6 = cors == "*"
+        v_def_v6 = next((v for v in VULN_DEFINITIONS if v["id"] == "v6"), None)
+        if v_def_v6: vulns.append({**v_def_v6, "detected": detected_v6})
+
+        # Fill in the rest (info ones) with False for now as they require deep JS parsing
+        for v in VULN_DEFINITIONS:
+            if not any(x["id"] == v["id"] for x in vulns):
+                vulns.append({**v, "detected": False})
+
+    except Exception as e:
+        print(f"SCAN ERROR for {domain}: {str(e)}")
+        # If the site is down, we mark everything as not detected but return the structure
+        return [{**v, "detected": False} for v in VULN_DEFINITIONS]
+
+    return vulns
+
+class ScanRequest(BaseModel):
+    domain: str
+
 def check_ssl(hostname: str) -> tuple[bool, str | None]:
     """Real SSL check — try connecting with SSL context"""
     try:
+        import ssl, socket
         ctx = ssl.create_default_context()
         with ctx.wrap_socket(socket.socket(), server_hostname=hostname) as s:
             s.settimeout(5)
@@ -41,27 +117,6 @@ def check_ssl(hostname: str) -> tuple[bool, str | None]:
     except Exception:
         return False, None
 
-def simulate_scan(domain: str) -> list[dict]:
-    """
-    In production: make HTTP requests to check headers, probe paths, etc.
-    For demo: probabilistic detection based on domain patterns.
-    """
-    is_http = domain.startswith("http://")
-    vulns = []
-    for v in VULN_DEFINITIONS:
-        det = False
-        if v["id"] == "v5": det = is_http
-        elif v["severity"] == "critical": det = random.random() > 0.65
-        elif v["severity"] == "high": det = random.random() > 0.45
-        elif v["severity"] == "medium": det = random.random() > 0.40
-        elif v["severity"] == "low": det = random.random() > 0.35
-        else: det = random.random() > 0.75
-        vulns.append({**v, "detected": det})
-    return vulns
-
-class ScanRequest(BaseModel):
-    domain: str
-
 @router.post("/website")
 def scan_website(req: ScanRequest, current_user: dict = Depends(get_current_user)):
     parsed = urlparse(req.domain if "://" in req.domain else f"https://{req.domain}")
@@ -70,8 +125,8 @@ def scan_website(req: ScanRequest, current_user: dict = Depends(get_current_user
     # SSL check
     ssl_valid, ssl_expiry = check_ssl(hostname)
 
-    # Vulnerability simulation (real checks in production)
-    vulns = simulate_scan(req.domain)
+    # REAL vulnerability scan
+    vulns = real_scan(req.domain)
     detected = [v for v in vulns if v["detected"]]
 
     # Calculate score
