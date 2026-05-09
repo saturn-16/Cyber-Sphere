@@ -28,7 +28,7 @@ class Settings:
     VIRUSTOTAL_API_KEY: str     = os.getenv("VIRUSTOTAL_API_KEY", "")
     SAFE_BROWSING_API_KEY: str  = os.getenv("SAFE_BROWSING_API_KEY", "")
     ABUSEIPDB_API_KEY: str      = os.getenv("ABUSEIPDB_API_KEY", "")
-    GEMINI_API_KEY: str         = os.getenv("GEMINI_API_KEY", "")
+    GEMINI_API_KEY: str         = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
 
     # File encryption
     ENCRYPTION_KEY: str         = os.getenv("ENCRYPTION_KEY", "")

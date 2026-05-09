@@ -144,9 +144,11 @@ def google_safe_browsing_check(url: str) -> tuple[bool, list[str]]:
 def analyze_with_gemini(target: str, scan_type: str) -> tuple[str, int]:
     """Returns (analysis_text, risk_boost)"""
     if not settings.USE_GEMINI:
+        print("DEBUG: Gemini AI is DISABLED (no API key)")
         return "", 0
     
     try:
+        print(f"DEBUG: Starting Gemini AI analysis for {scan_type}...")
         model = genai.GenerativeModel('gemini-2.5-flash')
         prompt = f"""Analyze the following {scan_type} for phishing or social engineering intent.
 Target: "{target}"
@@ -156,6 +158,7 @@ End your response with a clear verdict string: [VERDICT: SAFE], [VERDICT: SUSPIC
         
         response = model.generate_content(prompt)
         text = response.text
+        print("DEBUG: Gemini AI analysis SUCCESSFUL")
         
         boost = 0
         upper_text = text.upper()
@@ -167,6 +170,7 @@ End your response with a clear verdict string: [VERDICT: SAFE], [VERDICT: SUSPIC
         clean_text = text.replace("[VERDICT: SAFE]", "").replace("[VERDICT: SUSPICIOUS]", "").replace("[VERDICT: DANGEROUS]", "").strip()
         return clean_text, boost
     except Exception as e:
+        print(f"DEBUG: Gemini AI ERROR: {str(e)}")
         return f"AI Analysis temporarily unavailable: {str(e)}", 0
 
 # ── Persistence ───────────────────────────────────────────────────────────────
