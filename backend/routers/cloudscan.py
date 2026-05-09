@@ -31,7 +31,7 @@ VULN_DEFINITIONS = [
 import requests
 
 def real_scan(domain: str) -> list[dict]:
-    """Perform real security probes on the target domain."""
+    """Perform real security probes on the target domain with false-positive detection."""
     base_url = domain if "://" in domain else f"https://{domain}"
     vulns = []
     
@@ -40,21 +40,32 @@ def real_scan(domain: str) -> list[dict]:
         headers = {
             'User-Agent': 'CyberSphere-Security-Scanner/1.0 (+https://cybersphere.vercel.app)'
         }
-        response = requests.get(base_url, timeout=10, headers=headers, allow_redirects=True)
-        resp_headers = response.headers
+        main_res = requests.get(base_url, timeout=10, headers=headers, allow_redirects=True)
+        resp_headers = main_res.headers
+        main_content_len = len(main_res.text)
         
         # 2. Check Paths (Sensitive Files)
-        # We check a few critical paths
         for path, v_id in [("/.env", "v1"), ("/.git/config", "v2"), ("/admin", "v8")]:
+            detected = False
             try:
                 p_url = base_url.rstrip("/") + path
-                p_res = requests.get(p_url, timeout=5, headers=headers)
-                # If we get a 200 and some content, it's likely exposed
-                detected = p_res.status_code == 200 and len(p_res.text) > 10
+                p_res = requests.get(p_url, timeout=5, headers=headers, allow_redirects=False)
+                
+                # False Positive Protection:
+                # - Must be 200 OK
+                # - Must NOT be HTML (if it's an .env or .git file)
+                # - Must be different size than the homepage (usually)
+                content_type = p_res.headers.get("Content-Type", "").lower()
+                is_html = "text/html" in content_type
+                
+                if p_res.status_code == 200:
+                    if path == "/admin":
+                        detected = True # Admin panels are usually HTML
+                    elif not is_html and len(p_res.text) != main_content_len:
+                        detected = True
             except:
                 detected = False
             
-            # Find definition and add
             v_def = next((v for v in VULN_DEFINITIONS if v["id"] == v_id), None)
             if v_def: vulns.append({**v_def, "detected": detected})
 
