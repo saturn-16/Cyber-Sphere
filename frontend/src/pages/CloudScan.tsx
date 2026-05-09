@@ -241,6 +241,30 @@ export default function CloudScan() {
             </GlowCard>
           </div>
 
+          {/* AI Security Summary */}
+          {result.aiAnalysis && (
+            <GlowCard className="p-6 overflow-hidden relative" glowColor="violet">
+              <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12">
+                <Shield size={80} className="text-cyber-violet" />
+              </div>
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-lg bg-cyber-violet/20 border border-cyber-violet/40">
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  >
+                    <Shield className="text-cyber-violet" size={18} />
+                  </motion.div>
+                </div>
+                <h3 className="font-orbitron text-sm font-bold text-cyber-text tracking-wider uppercase">AI Security Intelligence</h3>
+                <span className="px-2 py-0.5 rounded-full bg-cyber-violet/10 border border-cyber-violet/30 text-[9px] font-mono text-cyber-violet font-bold tracking-widest">LIVE ANALYSIS</span>
+              </div>
+              <p className="text-sm text-cyber-text/90 leading-relaxed max-w-4xl relative z-10">
+                {result.aiAnalysis}
+              </p>
+            </GlowCard>
+          )}
+
           {/* Vulnerabilities list */}
           <GlowCard className="p-6">
             <div className="flex items-center gap-3 mb-4 flex-wrap">

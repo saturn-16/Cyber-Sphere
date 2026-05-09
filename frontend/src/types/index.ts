@@ -49,6 +49,7 @@ export interface CloudScanResult {
   vulnerabilities: CloudScanVuln[];
   sslValid: boolean;
   sslExpiry?: string;
+  aiAnalysis?: string;
   responseTime: number;
   timestamp: string;
 }
