@@ -190,21 +190,27 @@ export default function PhishGuard() {
   }, []);
 
   const runScan = async () => {
-    setScanning(true); setResult(null);
+    setScanning(true); 
+    setResult(null);
+    
+    // Start the API call and a minimum delay timer simultaneously
+    const apiPromise = (async () => {
+      if (tab === 'url') return await scanUrl(url);
+      if (tab === 'message') return await scanMessage(message);
+      return await scanQR(qrFile!);
+    })();
+
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 5000));
+
     try {
-      let res: PhishScanResult;
-      if (tab === 'url') res = await scanUrl(url);
-      else if (tab === 'message') res = await scanMessage(message);
-      else res = await scanQR(qrFile!);
-      
-      // Delay setting the result slightly to let the console animation finish
-      setTimeout(() => {
-        setResult(res);
-        setScanning(false);
-        fetchHistory();
-      }, 6000);
+      // Wait for both to finish (this ensures at least 5s of animation)
+      const [res] = await Promise.all([apiPromise, delayPromise]);
+      setResult(res);
+      fetchHistory();
     } catch (error) {
-      console.error(error);
+      console.error('Scan Error:', error);
+      // Optional: show error message to user
+    } finally {
       setScanning(false);
     }
   };

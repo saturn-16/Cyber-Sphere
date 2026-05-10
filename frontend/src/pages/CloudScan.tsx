@@ -114,10 +114,21 @@ export default function CloudScan() {
 
   const runScan = async () => {
     if (!domain.trim()) return;
-    setScanning(true); setResult(null);
-    const res = await scanWebsite(domain.trim());
-    setResult(res);
-    setScanning(false);
+    setScanning(true); 
+    setResult(null);
+    
+    // Parallel API call and minimum UI delay for forensic console
+    const apiPromise = scanWebsite(domain.trim());
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 8000));
+
+    try {
+      const [res] = await Promise.all([apiPromise, delayPromise]);
+      setResult(res);
+    } catch (err) {
+      console.error('CloudScan Error:', err);
+    } finally {
+      setScanning(false);
+    }
   };
 
   const detected = result?.vulnerabilities.filter(v => v.detected) || [];

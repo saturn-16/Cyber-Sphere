@@ -77,13 +77,23 @@ function UploadZone({ onUpload }: { onUpload: (f: File) => void }) {
   const handleUpload = async () => {
     if (!pending) return;
     setUploading(true);
-    await uploadFile(pending, { 
+    
+    // Parallel API call and minimum UI delay
+    const apiPromise = uploadFile(pending, { 
       password: options.usePassword ? options.password : undefined, 
       expiryHours: options.expiryHours || undefined 
     });
-    onUpload(pending);
-    setPending(null);
-    setUploading(false);
+    const delayPromise = new Promise(resolve => setTimeout(resolve, 6000));
+
+    try {
+      await Promise.all([apiPromise, delayPromise]);
+      onUpload(pending);
+      setPending(null);
+    } catch (err) {
+      console.error('Upload Error:', err);
+    } finally {
+      setUploading(false);
+    }
   };
 
   return (
