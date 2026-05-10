@@ -4,7 +4,7 @@ import type { ReactNode, ButtonHTMLAttributes } from 'react';
 
 interface NeonButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
-  variant?: 'cyan' | 'violet' | 'green' | 'red' | 'ghost' | 'outline';
+  variant?: 'cyan' | 'violet' | 'green' | 'red' | 'ghost' | 'outline' | 'amber';
   size?: 'sm' | 'md' | 'lg';
   loading?: boolean;
   icon?: ReactNode;
@@ -15,6 +15,7 @@ const variantMap = {
   violet:  'bg-cyber-violet/10 border-cyber-violet/50 text-cyber-violet hover:bg-cyber-violet hover:text-white hover:shadow-neon-violet',
   green:   'bg-cyber-green/10 border-cyber-green/50 text-cyber-green hover:bg-cyber-green hover:text-cyber-bg hover:shadow-neon-green',
   red:     'bg-cyber-red/10 border-cyber-red/50 text-cyber-red hover:bg-cyber-red hover:text-white hover:shadow-neon-red',
+  amber:   'bg-cyber-amber/10 border-cyber-amber/50 text-cyber-amber hover:bg-cyber-amber hover:text-cyber-bg hover:shadow-neon-amber',
   ghost:   'bg-transparent border-transparent text-cyber-muted hover:text-cyber-text hover:bg-white/5',
   outline: 'bg-transparent border-cyber-border text-cyber-text hover:border-cyber-cyan/50 hover:text-cyber-cyan',
 };

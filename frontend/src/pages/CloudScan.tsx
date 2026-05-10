@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, Search, Shield, ChevronDown, ChevronUp,
-  AlertTriangle, Info, CheckCircle, XCircle, Wifi, Lock,
+  AlertTriangle, Info, CheckCircle, XCircle, Lock,
   Terminal, Activity, Cpu
 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts';
