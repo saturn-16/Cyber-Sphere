@@ -3,11 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Globe, Search, Shield, ChevronDown, ChevronUp,
   AlertTriangle, Info, CheckCircle, XCircle, Wifi, Lock,
+  Terminal, Activity, Cpu
 } from 'lucide-react';
 import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts';
 import GlowCard from '../components/ui/GlowCard';
 import NeonButton from '../components/ui/NeonButton';
-import ScanAnimation from '../components/ui/ScanAnimation';
+import ScanProcessConsole from '../components/ui/ScanProcessConsole';
 import { scanWebsite } from '../services/api';
 import type { CloudScanResult, CloudScanVuln } from '../types';
 
@@ -18,6 +19,16 @@ const SEV_CONFIG: Record<CloudScanVuln['severity'], { color: string; label: stri
   low:      { color: '#0ea5e9', label: 'LOW',      icon: Info },
   info:     { color: '#64748b', label: 'INFO',     icon: Info },
 };
+
+const SCAN_PHASES = [
+  { message: "Initializing Forensic Probe...", duration: 800 },
+  { message: "Resolving DNS & Host Metadata...", duration: 1000 },
+  { message: "Probing SSL/TLS Certificates...", duration: 1200 },
+  { message: "Analyzing HTTP Security Headers...", duration: 1500 },
+  { message: "Scanning for Exposure Vectors (.env, .git)...", duration: 2000 },
+  { message: "Neural Pattern Analysis Active...", duration: 1800 },
+  { message: "Finalizing Security Posture Report...", duration: 1000 },
+];
 
 function SeverityBadge({ sev }: { sev: CloudScanVuln['severity'] }) {
   const { color, label } = SEV_CONFIG[sev];
@@ -53,11 +64,11 @@ function VulnCard({ vuln }: { vuln: CloudScanVuln }) {
           <motion.div initial={{ height: 0 }} animate={{ height: 'auto' }} exit={{ height: 0 }} className="overflow-hidden">
             <div className="px-4 pb-4 space-y-3 border-t border-cyber-border/30">
               <div className="pt-3">
-                <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-1">Description</div>
-                <p className="text-sm text-cyber-text">{vuln.description}</p>
+                <div className="text-xs font-mono text-cyber-muted uppercase tracking-widest mb-1">Technical Impact</div>
+                <p className="text-sm text-cyber-text leading-relaxed">{vuln.description}</p>
               </div>
               <div>
-                <div className="text-xs font-mono text-cyber-cyan uppercase tracking-widest mb-1">Recommended Fix</div>
+                <div className="text-xs font-mono text-cyber-cyan uppercase tracking-widest mb-1">Expert Remediation</div>
                 <p className="text-sm text-cyber-text bg-cyber-cyan/5 rounded-lg p-3 border border-cyber-cyan/15">{vuln.fix}</p>
               </div>
             </div>
@@ -89,37 +100,21 @@ function SecurityScore({ score }: { score: number }) {
           <span className="text-cyber-muted text-xs">/100</span>
         </div>
       </div>
-      <span className="font-mono text-sm font-bold tracking-widest px-3 py-1 rounded border"
+      <span className="font-mono text-xs font-bold tracking-widest px-3 py-1 rounded border"
         style={{ color, borderColor: `${color}40`, background: `${color}10` }}>{label}</span>
     </div>
   );
 }
 
-const SCAN_STEPS = [
-  'Resolving DNS & checking SSL…',
-  'Probing HTTP security headers…',
-  'Scanning for exposed files (.env, .git)…',
-  'Detecting open admin panels…',
-  'Checking CORS configuration…',
-  'Analyzing Firebase & API key exposure…',
-  'Generating security report…',
-];
-
 export default function CloudScan() {
   const [domain, setDomain] = useState('');
   const [scanning, setScanning] = useState(false);
-  const [step, setStep] = useState(0);
   const [result, setResult] = useState<CloudScanResult | null>(null);
   const [filter, setFilter] = useState<string>('all');
 
   const runScan = async () => {
     if (!domain.trim()) return;
-    setScanning(true); setResult(null); setStep(0);
-    // Step through scan messages
-    for (let i = 0; i < SCAN_STEPS.length; i++) {
-      await new Promise(r => setTimeout(r, 500));
-      setStep(i);
-    }
+    setScanning(true); setResult(null);
     const res = await scanWebsite(domain.trim());
     setResult(res);
     setScanning(false);
@@ -129,14 +124,13 @@ export default function CloudScan() {
   const counts = detected.reduce((acc, v) => ({ ...acc, [v.severity]: (acc[v.severity as keyof typeof acc] || 0) + 1 }), {} as any);
   const filtered = filter === 'all' ? detected : detected.filter(v => v.severity === filter);
 
-  const radarData = [
-    { subject: 'Headers', A: result ? (counts.medium ? 30 : 80) : 0 },
-    { subject: 'SSL/TLS', A: result?.sslValid ? 90 : 20 },
-    { subject: 'Exposure', A: result ? (counts.critical ? 10 : 75) : 0 },
-    { subject: 'CORS', A: result ? (counts.medium ? 50 : 85) : 0 },
-    { subject: 'Admin', A: result ? (counts.high ? 40 : 90) : 0 },
-    { subject: 'Leaks', A: result ? (counts.info ? 60 : 95) : 0 },
-  ];
+  const radarData = result?.engineBreakdown ? [
+    { subject: 'Headers', A: result.engineBreakdown.headers.score },
+    { subject: 'SSL/TLS', A: result.engineBreakdown.ssl_tls.score },
+    { subject: 'Exposure', A: result.engineBreakdown.exposure.score },
+    { subject: 'Protocol', A: result.engineBreakdown.protocol.score },
+    { subject: 'CORS', A: result.engineBreakdown.cors_policy.score },
+  ] : [];
 
   return (
     <div className="space-y-6">
@@ -147,8 +141,8 @@ export default function CloudScan() {
             <Globe className="text-cyber-amber" size={22} />
           </div>
           <div>
-            <h2 className="font-orbitron text-lg font-bold text-cyber-text">CloudScan</h2>
-            <p className="text-xs text-cyber-muted">Comprehensive Web & Cloud Security Scanner</p>
+            <h2 className="font-orbitron text-lg font-bold text-cyber-text tracking-tight">CloudScan <span className="text-[10px] text-cyber-amber font-mono ml-2 opacity-60 uppercase tracking-[0.3em]">Forensic Probe</span></h2>
+            <p className="text-xs text-cyber-muted">Industrial-Grade Web & Cloud Infrastructure Analysis</p>
           </div>
         </div>
 
@@ -156,32 +150,23 @@ export default function CloudScan() {
           <div className="relative flex-1">
             <Globe className="absolute left-3 top-1/2 -translate-y-1/2 text-cyber-muted" size={15} />
             <input value={domain} onChange={e => setDomain(e.target.value)}
-              placeholder="https://example.com or example.com"
-              className="w-full bg-white/5 border border-cyber-border rounded-lg pl-9 pr-4 py-3 text-sm text-cyber-text placeholder-cyber-muted/50 font-mono transition-all"
+              placeholder="Enter target domain or URL..."
+              className="w-full bg-white/5 border border-cyber-border rounded-lg pl-9 pr-4 py-3 text-sm text-cyber-text placeholder-cyber-muted/50 font-mono transition-all focus:border-cyber-amber/40 focus:bg-white/8 outline-none"
               onKeyDown={e => e.key === 'Enter' && !scanning && runScan()} />
           </div>
-          <NeonButton variant="cyan" onClick={runScan} loading={scanning} disabled={!domain.trim() || scanning}
+          <NeonButton variant="amber" onClick={runScan} loading={scanning} disabled={!domain.trim() || scanning}
             icon={<Search size={15} />}>
-            Scan Website
+            Run Analysis
           </NeonButton>
         </div>
-        <p className="text-xs text-cyber-muted">Checks: SSL/TLS, security headers, exposed .env/.git, admin panels, CORS, Firebase, API key leaks</p>
 
-        {/* Scan progress steps */}
         {scanning && (
-          <div className="mt-4">
-            <div className="space-y-1.5 mb-4">
-              {SCAN_STEPS.map((s, i) => (
-                <motion.div key={i} initial={{ opacity: 0 }} animate={{ opacity: i <= step ? 1 : 0.2 }}
-                  className="flex items-center gap-2 text-xs font-mono">
-                  {i < step ? <CheckCircle size={12} className="text-cyber-green flex-shrink-0" />
-                    : i === step ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.8, repeat: Infinity, ease: 'linear' }}><Wifi size={12} className="text-cyber-cyan flex-shrink-0" /></motion.div>
-                    : <div className="w-3 h-3 rounded-full border border-cyber-border flex-shrink-0" />}
-                  <span className={i === step ? 'text-cyber-cyan' : i < step ? 'text-cyber-green' : 'text-cyber-muted'}>{s}</span>
-                </motion.div>
-              ))}
-            </div>
-            <ScanAnimation isScanning={scanning} label={SCAN_STEPS[step]} />
+          <div className="mt-6">
+            <ScanProcessConsole 
+              phases={SCAN_PHASES} 
+              isScanning={scanning} 
+              onComplete={() => {}} 
+            />
           </div>
         )}
       </GlowCard>
@@ -189,19 +174,20 @@ export default function CloudScan() {
       {/* Results */}
       {result && !scanning && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="space-y-6">
-          {/* Score + overview */}
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <GlowCard className="p-6 flex flex-col items-center justify-center" glowColor={result.securityScore >= 70 ? 'green' : result.securityScore >= 40 ? 'amber' : 'red'}>
               <SecurityScore score={result.securityScore} />
               <div className="mt-4 text-center">
                 <p className="text-xs text-cyber-muted font-mono">{result.domain}</p>
-                <p className="text-[11px] text-cyber-muted mt-1">{result.responseTime}ms response · Scanned {new Date(result.timestamp).toLocaleTimeString()}</p>
+                <p className="text-[10px] text-cyber-muted/60 mt-1 flex items-center gap-1 justify-center">
+                  <Activity size={10} /> {result.responseTime}ms Latency · Scanned {new Date(result.timestamp).toLocaleTimeString()}
+                </p>
               </div>
             </GlowCard>
 
             <GlowCard className="p-5" glowColor="cyan">
-              <h3 className="font-orbitron text-sm font-bold text-cyber-text mb-4 flex items-center gap-2">
-                <Shield size={14} className="text-cyber-cyan" /> Security Radar
+              <h3 className="font-orbitron text-[11px] font-bold text-cyber-cyan mb-4 flex items-center gap-2 uppercase tracking-widest">
+                <Cpu size={14} /> Intelligence Radar
               </h3>
               <ResponsiveContainer width="100%" height={180}>
                 <RadarChart data={radarData}>
@@ -213,82 +199,79 @@ export default function CloudScan() {
             </GlowCard>
 
             <GlowCard className="p-5">
-              <h3 className="font-orbitron text-sm font-bold text-cyber-text mb-4">Vulnerability Summary</h3>
+              <h3 className="font-orbitron text-[11px] font-bold text-cyber-text mb-4 uppercase tracking-widest">Findings Summary</h3>
               <div className="space-y-2">
                 {(['critical','high','medium','low','info'] as const).map(sev => {
                   const { color, label } = SEV_CONFIG[sev];
                   const c = counts[sev] || 0;
                   return (
                     <div key={sev} className="flex items-center gap-3">
-                      <span className="w-16 text-xs font-mono" style={{ color }}>{label}</span>
-                      <div className="flex-1 h-2 bg-cyber-border rounded-full overflow-hidden">
+                      <span className="w-16 text-[10px] font-mono font-bold" style={{ color }}>{label}</span>
+                      <div className="flex-1 h-1.5 bg-white/5 rounded-full overflow-hidden">
                         <motion.div className="h-full rounded-full" style={{ background: color }}
                           initial={{ width: 0 }} animate={{ width: `${(c / Math.max(detected.length, 1)) * 100}%` }}
                           transition={{ duration: 0.8, delay: 0.3 }} />
                       </div>
-                      <span className="text-xs text-cyber-muted w-4 text-right">{c}</span>
+                      <span className="text-[10px] font-mono text-cyber-muted w-4 text-right">{c}</span>
                     </div>
                   );
                 })}
               </div>
               <div className="mt-4 pt-3 border-t border-cyber-border flex items-center gap-2">
-                <Lock size={13} className={result.sslValid ? 'text-cyber-green' : 'text-cyber-red'} />
-                <span className="text-xs text-cyber-muted">SSL/TLS: </span>
-                <span className={`text-xs font-mono ${result.sslValid ? 'text-cyber-green' : 'text-cyber-red'}`}>
-                  {result.sslValid ? `VALID · Expires ${new Date(result.sslExpiry!).toLocaleDateString()}` : 'INVALID / MISSING'}
+                <Lock size={12} className={result.sslValid ? 'text-cyber-green' : 'text-cyber-red'} />
+                <span className="text-[10px] text-cyber-muted uppercase tracking-wider">SSL Tunnel: </span>
+                <span className={`text-[10px] font-mono font-bold ${result.sslValid ? 'text-cyber-green' : 'text-cyber-red'}`}>
+                  {result.sslValid ? `VALID · TLS 1.3` : 'INSECURE / EXPOSED'}
                 </span>
               </div>
             </GlowCard>
           </div>
 
-          {/* AI Security Summary */}
-          {result.aiAnalysis && (
+          {/* Neural Insights */}
+          {result.neuralAnalysis && (
             <GlowCard className="p-6 overflow-hidden relative" glowColor="violet">
               <div className="absolute top-0 right-0 p-4 opacity-10 rotate-12">
-                <Shield size={80} className="text-cyber-violet" />
+                <Terminal size={80} className="text-cyber-violet" />
               </div>
               <div className="flex items-center gap-3 mb-4">
                 <div className="p-2 rounded-lg bg-cyber-violet/20 border border-cyber-violet/40">
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{ duration: 2, repeat: Infinity }}
-                  >
+                  <motion.div animate={{ scale: [1, 1.2, 1] }} transition={{ duration: 2, repeat: Infinity }}>
                     <Shield className="text-cyber-violet" size={18} />
                   </motion.div>
                 </div>
-                <h3 className="font-orbitron text-sm font-bold text-cyber-text tracking-wider uppercase">AI Security Intelligence</h3>
-                <span className="px-2 py-0.5 rounded-full bg-cyber-violet/10 border border-cyber-violet/30 text-[9px] font-mono text-cyber-violet font-bold tracking-widest">LIVE ANALYSIS</span>
+                <h3 className="font-orbitron text-xs font-bold text-cyber-text tracking-widest uppercase">Neural Vulnerability Insight</h3>
+                <span className="px-2 py-0.5 rounded-full bg-cyber-violet/10 border border-cyber-violet/30 text-[9px] font-mono text-cyber-violet font-bold tracking-widest uppercase">Expert Assessment</span>
               </div>
-              <p className="text-sm text-cyber-text/90 leading-relaxed max-w-4xl relative z-10">
-                {result.aiAnalysis}
+              <p className="text-sm text-cyber-text/90 leading-relaxed max-w-4xl relative z-10 font-medium italic">
+                "{result.neuralAnalysis}"
               </p>
             </GlowCard>
           )}
 
           {/* Vulnerabilities list */}
           <GlowCard className="p-6">
-            <div className="flex items-center gap-3 mb-4 flex-wrap">
-              <h3 className="font-orbitron text-sm font-bold text-cyber-text flex items-center gap-2">
+            <div className="flex items-center gap-3 mb-6 flex-wrap">
+              <h3 className="font-orbitron text-xs font-bold text-cyber-text flex items-center gap-2 uppercase tracking-widest">
                 <AlertTriangle size={15} className="text-cyber-amber" />
-                Detected Issues ({detected.length})
+                Technical Findings ({detected.length})
               </h3>
               <div className="flex gap-1 flex-wrap ml-auto">
                 {['all','critical','high','medium','low','info'].map(f => (
                   <button key={f} onClick={() => setFilter(f)}
-                    className={`px-2.5 py-1 rounded text-[11px] font-mono transition-all ${filter === f ? 'bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30' : 'text-cyber-muted hover:text-cyber-text'}`}>
-                    {f === 'all' ? 'ALL' : SEV_CONFIG[f as CloudScanVuln['severity']].label}
+                    className={`px-2.5 py-1 rounded text-[10px] font-mono font-bold transition-all ${filter === f ? 'bg-cyber-cyan/15 text-cyber-cyan border border-cyber-cyan/30 shadow-[0_0_10px_rgba(0,245,255,0.1)]' : 'text-cyber-muted hover:text-cyber-text'}`}>
+                    {f.toUpperCase()}
                   </button>
                 ))}
               </div>
             </div>
-            <div className="space-y-3">
+            <div className="space-y-4">
               <AnimatePresence>
                 {filtered.map(v => <VulnCard key={v.id} vuln={v} />)}
               </AnimatePresence>
               {filtered.length === 0 && (
-                <div className="text-center py-6 text-cyber-muted text-sm">
-                  <CheckCircle className="mx-auto mb-2 text-cyber-green" size={24} />
-                  No {filter !== 'all' ? filter : ''} issues detected!
+                <div className="text-center py-10 text-cyber-muted text-sm border-2 border-dashed border-cyber-border rounded-xl">
+                  <CheckCircle className="mx-auto mb-3 text-cyber-green opacity-40" size={32} />
+                  No {filter !== 'all' ? filter : ''} threat vectors identified in current scan range.
                 </div>
               )}
             </div>

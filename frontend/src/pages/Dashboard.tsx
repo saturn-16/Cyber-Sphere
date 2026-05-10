@@ -197,7 +197,7 @@ export default function Dashboard() {
         </GlowCard>
       </div>
 
-      {/* Bottom row: activity + quick actions */}
+      {/* Bottom row: activity + quick actions + Expert Insights */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Activity feed */}
         <GlowCard className="lg:col-span-2 p-5">
@@ -207,37 +207,60 @@ export default function Dashboard() {
           <ActivityFeed items={stats!.recentActivity} />
         </GlowCard>
 
-        {/* Quick actions */}
-        <GlowCard glowColor="violet" className="p-5">
-          <h3 className="font-orbitron text-sm font-semibold text-cyber-text mb-4 flex items-center gap-2">
-            <Zap size={16} className="text-cyber-violet" /> Quick Actions
-          </h3>
-          <div className="space-y-3">
-            {quickActions.map(({ label, icon: Icon, color, to }) => (
-              <motion.button key={label} whileHover={{ x: 4 }} onClick={() => navigate(to)}
-                className="w-full flex items-center justify-between p-3 rounded-lg border transition-all group"
-                style={{ background: `${color}08`, borderColor: `${color}25` }}>
-                <div className="flex items-center gap-3">
-                  <Icon size={16} style={{ color }} />
-                  <span className="text-sm text-cyber-text">{label}</span>
+        <div className="space-y-4">
+          {/* Quick actions */}
+          <GlowCard glowColor="violet" className="p-5">
+            <h3 className="font-orbitron text-sm font-semibold text-cyber-text mb-4 flex items-center gap-2">
+              <Zap size={16} className="text-cyber-violet" /> Quick Actions
+            </h3>
+            <div className="space-y-3">
+              {quickActions.map(({ label, icon: Icon, color, to }) => (
+                <motion.button key={label} whileHover={{ x: 4 }} onClick={() => navigate(to)}
+                  className="w-full flex items-center justify-between p-3 rounded-lg border transition-all group"
+                  style={{ background: `${color}08`, borderColor: `${color}25` }}>
+                  <div className="flex items-center gap-3">
+                    <Icon size={16} style={{ color }} />
+                    <span className="text-sm text-cyber-text">{label}</span>
+                  </div>
+                  <ExternalLink size={13} className="text-cyber-muted group-hover:text-cyber-text transition-colors" />
+                </motion.button>
+              ))}
+            </div>
+            {/* Module status */}
+            <div className="mt-4 pt-4 border-t border-cyber-border space-y-2">
+              {['PhishGuard Engine', 'SecureShare Vault', 'CloudScan Service'].map(m => (
+                <div key={m} className="flex items-center justify-between">
+                  <span className="text-xs text-cyber-muted">{m}</span>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-1.5 h-1.5 rounded-full bg-cyber-green animate-pulse" />
+                    <span className="text-[10px] font-mono text-cyber-green">ONLINE</span>
+                  </div>
                 </div>
-                <ExternalLink size={13} className="text-cyber-muted group-hover:text-cyber-text transition-colors" />
-              </motion.button>
-            ))}
-          </div>
-          {/* Module status */}
-          <div className="mt-4 pt-4 border-t border-cyber-border space-y-2">
-            {['PhishGuard Engine', 'SecureShare Vault', 'CloudScan Service'].map(m => (
-              <div key={m} className="flex items-center justify-between">
-                <span className="text-xs text-cyber-muted">{m}</span>
-                <div className="flex items-center gap-1.5">
-                  <div className="w-1.5 h-1.5 rounded-full bg-cyber-green animate-pulse" />
-                  <span className="text-[10px] font-mono text-cyber-green">ONLINE</span>
-                </div>
+              ))}
+            </div>
+          </GlowCard>
+
+          {/* Expert Insights */}
+          <GlowCard glowColor="amber" className="p-5">
+            <h3 className="font-orbitron text-[11px] font-bold text-cyber-amber mb-3 flex items-center gap-2 uppercase tracking-widest">
+              <Shield size={14} /> Expert Security Insights
+            </h3>
+            <div className="space-y-4">
+              <div className="border-l-2 border-cyber-amber/30 pl-3">
+                <p className="text-xs font-bold text-cyber-text mb-1">Typosquatting Alert</p>
+                <p className="text-[10px] text-cyber-muted leading-relaxed">
+                  We've noticed a 40% increase in 'lookalike' domains targeting corporate SSO portals. Always check the TLD.
+                </p>
               </div>
-            ))}
-          </div>
-        </GlowCard>
+              <div className="border-l-2 border-cyber-amber/30 pl-3">
+                <p className="text-xs font-bold text-cyber-text mb-1">Zero-Trust Best Practice</p>
+                <p className="text-[10px] text-cyber-muted leading-relaxed">
+                  Never trust a QR code from an unverified source. Attackers are using 'Quishing' to bypass email filters.
+                </p>
+              </div>
+            </div>
+          </GlowCard>
+        </div>
       </div>
     </div>
   );

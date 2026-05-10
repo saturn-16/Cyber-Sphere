@@ -3,10 +3,11 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   LayoutDashboard, Shield, Share2, Globe, LogOut,
-  ChevronLeft, ChevronRight, Zap, Settings, User,
+  ChevronLeft, ChevronRight, Settings, User,
 } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { clsx } from 'clsx';
+import Logo from './Logo';
 
 const navItems = [
   { to: '/dashboard', icon: LayoutDashboard, label: 'Dashboard', color: 'text-cyber-cyan' },
@@ -29,28 +30,13 @@ export default function Sidebar() {
       className="relative flex-shrink-0 h-screen flex flex-col glass-strong border-r border-cyber-border overflow-hidden z-20"
     >
       {/* Logo */}
-      <div className="flex items-center gap-3 p-4 border-b border-cyber-border h-16">
-        <div className="relative flex-shrink-0 w-9 h-9">
-          <div className="absolute inset-0 rounded-lg bg-cyber-cyan/20 border border-cyber-cyan/40 flex items-center justify-center">
-            <Zap size={18} className="text-cyber-cyan" />
-          </div>
-          <div className="absolute inset-0 rounded-lg animate-pulse-neon opacity-50" />
-        </div>
+      <div className="flex items-center gap-3 p-4 border-b border-cyber-border h-16 overflow-hidden">
+        <Logo size={28} className={collapsed ? "mx-auto" : ""} />
         <AnimatePresence>
-          {!collapsed && (
-            <motion.div
-              initial={{ opacity: 0, x: -10 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -10 }}
-              transition={{ duration: 0.2 }}
-            >
-              <span className="font-orbitron font-bold text-lg gradient-text-cyber">
-                CyberSphere
-              </span>
-              <div className="text-[10px] font-mono text-cyber-muted tracking-widest">
-                SECURITY PLATFORM
-              </div>
-            </motion.div>
+          {collapsed && (
+             <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="absolute inset-0 flex items-center justify-center bg-black/80 z-50">
+                <Logo size={32} />
+             </motion.div>
           )}
         </AnimatePresence>
       </div>

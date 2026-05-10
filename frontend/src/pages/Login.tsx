@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Mail, Lock, Eye, EyeOff, Zap, AlertCircle } from 'lucide-react';
+import { Shield, Mail, Lock, Eye, EyeOff, AlertCircle } from 'lucide-react';
 import NeonButton from '../components/ui/NeonButton';
 import ParticleBackground from '../components/ui/ParticleBackground';
 import { useAuthStore } from '../store/authStore';
+import Logo from '../components/layout/Logo';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -58,18 +59,9 @@ export default function Login() {
         className="relative z-10 w-full max-w-md px-4"
       >
         {/* Logo */}
-        <div className="text-center mb-8">
-          <motion.div
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
-            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyber-cyan/10 border border-cyber-cyan/30 mb-4"
-            style={{ boxShadow: '0 0 40px rgba(0,245,255,0.2)' }}
-          >
-            <Zap className="text-cyber-cyan" size={32} />
-          </motion.div>
-          <h1 className="font-orbitron text-3xl font-bold gradient-text-cyber">CyberSphere</h1>
-          <p className="text-cyber-muted text-sm mt-1">Security Operations Platform</p>
+        <div className="flex flex-col items-center mb-8">
+           <Logo size={64} className="mb-2" />
+           <p className="text-cyber-muted text-[10px] font-mono tracking-[0.4em] uppercase opacity-50">Industrial Grade · Neural Core</p>
         </div>
 
         {/* Card */}

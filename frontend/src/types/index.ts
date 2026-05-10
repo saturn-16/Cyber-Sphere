@@ -29,7 +29,15 @@ export interface PhishScanResult {
   virusTotalHits?: number;
   virusTotalTotal?: number;
   safeBrowsingFlag?: boolean;
-  aiAnalysis?: string;
+  neuralAnalysis?: string;
+  engineBreakdown?: {
+    pattern_heuristics: { score: number; status: string };
+    typosquatting_engine: { score: number; status: string };
+    whois_analysis: { score: number; data: any };
+    virustotal: { hits: number; total: number; status: string };
+    google_safe_browsing: { flagged: boolean };
+    neural_engine: { boost: number; verdict: string };
+  };
   timestamp: string;
 }
 
@@ -49,7 +57,14 @@ export interface CloudScanResult {
   vulnerabilities: CloudScanVuln[];
   sslValid: boolean;
   sslExpiry?: string;
-  aiAnalysis?: string;
+  neuralAnalysis?: string;
+  engineBreakdown?: {
+    ssl_tls: { score: number; status: string };
+    headers: { score: number; status: string };
+    exposure: { score: number; status: string };
+    protocol: { score: number; status: string };
+    cors_policy: { score: number; status: string };
+  };
   responseTime: number;
   timestamp: string;
 }
@@ -59,7 +74,9 @@ export interface SecureFile {
   filename: string;
   size: number;              // bytes
   encrypted: boolean;
+  encryptionMethod?: string;
   malwareStatus: 'clean' | 'infected' | 'scanning' | 'unknown';
+  malwareAnalysis?: string;
   shareToken?: string;
   passwordProtected: boolean;
   expiryTime?: string;
