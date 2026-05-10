@@ -202,7 +202,7 @@ def analyze_with_neural_engine(target: str, scan_type: str) -> tuple[str, int]:
         return "", 0
     
     try:
-        model = genai.GenerativeModel('gemini-1.5-flash-latest')
+        model = genai.GenerativeModel('gemini-pro-latest')
         prompt = f"""Perform a Neural Behavioral Analysis on the following {scan_type} for phishing or social engineering intent.
 Target: "{target}"
 Explain logically if it resembles a phishing attempt, what the human-centric intent is (e.g. credential harvesting), and whether it seems safe or suspicious.

@@ -203,7 +203,7 @@ def scan_website(req: ScanRequest, current_user: dict = Depends(get_current_user
         try:
             import google.generativeai as genai
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-1.5-flash-latest')
+            model = genai.GenerativeModel('gemini-pro-latest')
             
             issues_text = ", ".join([v["title"] for v in detected]) or "No major vulnerabilities"
             prompt = f"""As a senior security architect, provide a Neural Vulnerability Insight for the website "{req.domain}".
