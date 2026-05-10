@@ -36,8 +36,14 @@ const ScanProcessConsole: React.FC<ScanProcessConsoleProps> = ({ isScanning, pha
     }]);
   };
 
+  // Clear logs when the target changes to avoid showing stale data from previous scans
+  useEffect(() => {
+    setLogs([]);
+  }, [scanType, phases]);
+
   useEffect(() => {
     if (isScanning) {
+      // Internal reset when scanning starts
       setLogs([]);
       
       let currentPhases: ScanPhase[] = [];
