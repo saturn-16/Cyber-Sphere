@@ -202,7 +202,7 @@ def analyze_with_neural_engine(target: str, scan_type: str) -> tuple[str, int]:
         return "", 0
     
     try:
-        model = genai.GenerativeModel('gemini-flash-latest')
+        model = genai.GenerativeModel('gemini-1.5-flash')
         prompt = f"""Perform a Neural Behavioral Analysis on the following {scan_type} for phishing or social engineering intent.
 Target: "{target}"
 Explain logically if it resembles a phishing attempt, what the human-centric intent is (e.g. credential harvesting), and whether it seems safe or suspicious.
@@ -222,6 +222,8 @@ End your response with a clear verdict string: [VERDICT: SAFE], [VERDICT: SUSPIC
         clean_text = text.replace("[VERDICT: SAFE]", "").replace("[VERDICT: SUSPICIOUS]", "").replace("[VERDICT: DANGEROUS]", "").strip()
         return clean_text, boost
     except Exception as e:
+        if "429" in str(e):
+            return "Neural analysis currently under high load. Professional insights will resume shortly.", 0
         return f"Neural engine offline: {str(e)}", 0
 
 # ── Persistence ───────────────────────────────────────────────────────────────

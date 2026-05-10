@@ -203,7 +203,7 @@ def scan_website(req: ScanRequest, current_user: dict = Depends(get_current_user
         try:
             import google.generativeai as genai
             genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel('gemini-flash-latest')
+            model = genai.GenerativeModel('gemini-1.5-flash')
             
             issues_text = ", ".join([v["title"] for v in detected]) or "No major vulnerabilities"
             prompt = f"""As a senior security architect, provide a Neural Vulnerability Insight for the website "{req.domain}".
@@ -215,7 +215,10 @@ Avoid generic advice; focus on the impact of these specific vulnerabilities."""
             ai_resp = model.generate_content(prompt)
             neural_insights = ai_resp.text
         except Exception as e:
-            neural_insights = f"Neural engine error: {str(e)}"
+            if "429" in str(e):
+                neural_insights = "Neural analysis currently under high load. Professional insights will resume shortly."
+            else:
+                neural_insights = f"Neural engine error: {str(e)}"
 
     # Engine Breakdown for UI Radar Chart
     engine_breakdown = {
