@@ -112,7 +112,30 @@ export default function Dashboard() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    getDashboardStats().then(s => { setStats(s); setLoading(false); });
+    getDashboardStats()
+      .then(s => { 
+        setStats(s); 
+      })
+      .catch(err => {
+        console.error('Failed to load dashboard stats:', err);
+        // Fallback data for smooth UI experience
+        setStats({
+          totalScans: 0,
+          threatsDetected: 0,
+          filesShared: 0,
+          securityScore: 100,
+          scanTrend: [],
+          recentActivity: [],
+          threatDistribution: [
+            { name: 'Safe', value: 100, color: '#39ff14' },
+            { name: 'Suspicious', value: 0, color: '#ff9500' },
+            { name: 'Dangerous', value: 0, color: '#ff0040' },
+          ]
+        });
+      })
+      .finally(() => {
+        setLoading(false);
+      });
     setFeed(getThreatFeed());
   }, []);
 

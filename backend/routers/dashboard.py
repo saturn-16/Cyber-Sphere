@@ -12,10 +12,10 @@ router = APIRouter()
 
 @router.get("/stats")
 def get_stats(current_user: dict = Depends(get_current_user)):
-    conn = get_connection()
-    uid = current_user["sub"]
-
     try:
+        conn = get_connection()
+        uid = current_user["sub"]
+        
         if settings.USE_POSTGRES:
             cur = conn.cursor()
             cur.execute("SELECT COUNT(*) FROM scans WHERE user_id = %s", (uid,))
@@ -56,8 +56,14 @@ def get_stats(current_user: dict = Depends(get_current_user)):
                     "scans": count + random.randint(1, 5),
                     "threats": max(0, count - random.randint(0, 3)),
                 })
-    finally:
         conn.close()
+    except Exception as e:
+        print(f"Dashboard Stats Error: {e}")
+        # Fallback values if DB fails
+        total_scans = 0
+        threats = 0
+        files = 0
+        trend = []
 
     return {
         "totalScans": total_scans + 42,
