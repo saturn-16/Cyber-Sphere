@@ -7,6 +7,7 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException, Depends, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
+from passlib.context import CryptContext
 import jwt
 
 from database import get_connection
@@ -15,9 +16,17 @@ from config import settings
 router = APIRouter()
 security = HTTPBearer()
 
-# ── Helpers ───────────────────────────────────────────────────────────────────
-def hash_password(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
+# ── Password Hashing ──────────────────────────────────────────────────────────
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
+def get_password_hash(password: str) -> str:
+    return pwd_context.hash(password)
+
+def verify_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        return False
 
 def create_token(user_id: str, email: str) -> str:
     payload = {
@@ -52,91 +61,109 @@ class LoginRequest(BaseModel):
 # ── Routes ────────────────────────────────────────────────────────────────────
 @router.post("/register", status_code=201)
 def register(req: RegisterRequest):
-    print(f"DEBUG: Register attempt for {req.email}")
+    email_clean = req.email.strip().lower()
+    print(f"DEBUG: Registering new operator: {email_clean}")
+    
     conn = get_connection()
     try:
+        cur = conn.cursor()
+        
+        # Check if email exists
+        if settings.USE_POSTGRES:
+            cur.execute("SELECT id FROM users WHERE email = %s", (email_clean,))
+        else:
+            cur.execute("SELECT id FROM users WHERE email = ?", (email_clean,))
+        
+        if cur.fetchone():
+            print(f"DEBUG: Registration failed — {email_clean} already exists")
+            raise HTTPException(status_code=409, detail="Email already registered")
+        
         user_id = str(uuid.uuid4())
-        hashed = hash_password(req.password)
-        d_name = req.displayName or req.email.split("@")[0]
+        hashed = get_password_hash(req.password)
+        d_name = req.displayName or email_clean.split("@")[0]
         
         if settings.USE_POSTGRES:
-            print("DEBUG: Using PostgreSQL")
-            cur = conn.cursor()
-            cur.execute("SELECT id FROM users WHERE email = %s", (req.email.lower(),))
-            if cur.fetchone():
-                print("DEBUG: Email already exists")
-                raise HTTPException(status_code=409, detail="Email already registered")
-            
             cur.execute(
                 'INSERT INTO users (id, email, "displayName", password_hash) VALUES (%s,%s,%s,%s)',
-                (user_id, req.email.lower(), d_name, hashed)
+                (user_id, email_clean, d_name, hashed)
             )
-            conn.commit()
-            cur.close()
         else:
-            print("DEBUG: Using SQLite")
-            cur = conn.cursor()
-            existing = cur.execute("SELECT id FROM users WHERE email = ?", (req.email.lower(),)).fetchone()
-            if existing:
-                print("DEBUG: Email already exists")
-                raise HTTPException(status_code=409, detail="Email already registered")
             cur.execute(
                 "INSERT INTO users (id, email, displayName, password_hash) VALUES (?,?,?,?)",
-                (user_id, req.email.lower(), d_name, hashed)
+                (user_id, email_clean, d_name, hashed)
             )
-            conn.commit()
-        print("DEBUG: Registration successful")
+        
+        conn.commit()
+        cur.close()
+        print(f"DEBUG: Registration SUCCESS for {email_clean} (ID: {user_id})")
+        
+        return {
+            "token": create_token(user_id, email_clean),
+            "user": {"id": user_id, "email": email_clean, "displayName": d_name}
+        }
+    except HTTPException:
+        raise
     except Exception as e:
-        print(f"DEBUG: Registration ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
+        print(f"DEBUG: CRITICAL REGISTRATION ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error during registration")
     finally:
         conn.close()
-        
-    return {
-        "token": create_token(user_id, req.email),
-        "user": {"id": user_id, "email": req.email, "displayName": req.displayName}
-    }
 
 @router.post("/login")
 def login(req: LoginRequest):
+    email_clean = req.email.strip().lower()
+    print(f"DEBUG: Login attempt for operator: {email_clean}")
+    
     conn = get_connection()
     try:
+        cur = conn.cursor()
+        
+        # Fetch user by email
         if settings.USE_POSTGRES:
-            cur = conn.cursor()
-            cur.execute(
-                'SELECT id, email, "displayName" FROM users WHERE email = %s AND password_hash = %s',
-                (req.email.lower(), hash_password(req.password))
-            )
-            row = cur.fetchone()
-            cur.close()
+            cur.execute('SELECT id, email, "displayName", password_hash FROM users WHERE email = %s', (email_clean,))
         else:
-            row = conn.execute(
-                "SELECT id, email, displayName FROM users WHERE email = ? AND password_hash = ?",
-                (req.email.lower(), hash_password(req.password))
-            ).fetchone()
+            cur.execute("SELECT id, email, displayName, password_hash FROM users WHERE email = ?", (email_clean,))
+        
+        row = cur.fetchone()
+        cur.close()
+        
+        if not row:
+            print(f"DEBUG: Login failed — email {email_clean} not found in database")
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+        
+        # Verify hash
+        if not verify_password(req.password, row["password_hash"]):
+            print(f"DEBUG: Login failed — password mismatch for {email_clean}")
+            raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+        print(f"DEBUG: Login SUCCESS for {email_clean}")
+        return {
+            "token": create_token(row["id"], row["email"]),
+            "user": {"id": row["id"], "email": row["email"], "displayName": row["displayName"]}
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"DEBUG: CRITICAL LOGIN ERROR: {str(e)}")
+        raise HTTPException(status_code=500, detail="Internal server error during login")
     finally:
         conn.close()
-        
-    if not row:
-        raise HTTPException(status_code=401, detail="Invalid email or password")
-    return {
-        "token": create_token(row["id"], row["email"]),
-        "user": {"id": row["id"], "email": row["email"], "displayName": row["displayName"]}
-    }
 
 @router.get("/me")
 def me(current_user: dict = Depends(get_current_user)):
     conn = get_connection()
     try:
+        cur = conn.cursor()
         if settings.USE_POSTGRES:
-            cur = conn.cursor()
             cur.execute('SELECT id, email, "displayName", created_at FROM users WHERE id = %s', (current_user["sub"],))
-            row = cur.fetchone()
-            cur.close()
         else:
-            row = conn.execute("SELECT id, email, displayName, created_at FROM users WHERE id = ?", (current_user["sub"],)).fetchone()
+            cur.execute("SELECT id, email, displayName, created_at FROM users WHERE id = ?", (current_user["sub"],))
+        
+        row = cur.fetchone()
+        cur.close()
     finally:
         conn.close()
         
-    if not row: raise HTTPException(404, "User not found")
+    if not row:
+        raise HTTPException(404, "User not found")
     return dict(row)

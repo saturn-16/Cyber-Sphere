@@ -26,8 +26,18 @@ if not _raw_key:
     _raw_key = Fernet.generate_key().decode()
 fernet = Fernet(_raw_key.encode() if isinstance(_raw_key, str) else _raw_key)
 
+from passlib.context import CryptContext
+
+pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+
 def hash_password(pw: str) -> str:
-    return hashlib.sha256(pw.encode()).hexdigest()
+    return pwd_context.hash(pw)
+
+def verify_file_password(plain_password: str, hashed_password: str) -> bool:
+    try:
+        return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        return False
 
 def background_vt_poll(analysis_id: str, file_id: str):
     try:
@@ -240,7 +250,7 @@ def download_file(
             raise HTTPException(403, "Access denied")
 
         # Password check
-        if row["password_hash"] and hash_password(password or "") != row["password_hash"]:
+        if row["password_hash"] and not verify_file_password(password or "", row["password_hash"]):
             raise HTTPException(401, "Invalid password")
 
         # Expiry check
@@ -295,7 +305,7 @@ def download_shared_file(share_token: str, password: Optional[str] = None):
             raise HTTPException(404, "Shared file not found")
 
         # Password check
-        if row["password_hash"] and hash_password(password or "") != row["password_hash"]:
+        if row["password_hash"] and not verify_file_password(password or "", row["password_hash"]):
             raise HTTPException(401, "Invalid password")
 
         # Expiry check
