@@ -28,7 +28,7 @@ fernet = Fernet(_raw_key.encode() if isinstance(_raw_key, str) else _raw_key)
 
 from passlib.context import CryptContext
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+pwd_context = CryptContext(schemes=["pbkdf2_sha256"], deprecated="auto")
 
 def hash_password(pw: str) -> str:
     return pwd_context.hash(pw)
