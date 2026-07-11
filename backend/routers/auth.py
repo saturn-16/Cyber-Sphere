@@ -24,7 +24,14 @@ def get_password_hash(password: str) -> str:
 
 def verify_password(plain_password: str, hashed_password: str) -> bool:
     try:
-        return pwd_context.verify(plain_password, hashed_password)
+        if pwd_context.identify(hashed_password):
+            return pwd_context.verify(plain_password, hashed_password)
+    except Exception:
+        pass
+    try:
+        import secrets
+        old_hash = hashlib.sha256(plain_password.encode()).hexdigest()
+        return secrets.compare_digest(old_hash, hashed_password)
     except Exception:
         return False
 

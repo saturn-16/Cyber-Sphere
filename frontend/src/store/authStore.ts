@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import axios from 'axios';
+import { API_BASE_URL } from '../services/api';
 import type { User } from '../types';
 
 
@@ -28,7 +29,7 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email, password) => {
         set({ isLoading: true });
         try {
-          const res = await axios.post('http://localhost:8000/api/auth/login', { email, password });
+          const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
           set({
             user: res.data.user,
             token: res.data.token,
@@ -45,7 +46,7 @@ export const useAuthStore = create<AuthStore>()(
       signup: async (email, password, displayName) => {
         set({ isLoading: true });
         try {
-          const res = await axios.post('http://localhost:8000/api/auth/register', { email, password, displayName });
+          const res = await axios.post(`${API_BASE_URL}/api/auth/register`, { email, password, displayName });
           set({
             user: res.data.user,
             token: res.data.token,

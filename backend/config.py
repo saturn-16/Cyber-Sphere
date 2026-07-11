@@ -1,25 +1,40 @@
 """
 CyberSphere Backend Configuration
 ───────────────────────────────────
-All secrets are loaded from environment variables.
-Copy .env.example to .env and fill in real values.
+All secrets are loaded from environment variables (.env file).
 """
 
 import os
 from functools import lru_cache
 from dotenv import load_dotenv
 
-# Load env variables from .env file if it exists
+# Load .env automatically
 load_dotenv()
 
 class Settings:
     # JWT
     SECRET_KEY: str         = os.getenv("SECRET_KEY", "change-me-in-production-32-chars")
     JWT_ALGORITHM: str      = "HS256"
-    JWT_EXPIRE_HOURS: int   = 24
+    JWT_EXPIRE_HOURS: int   = int(os.getenv("JWT_EXPIRE_HOURS", "24"))
 
-    # Database
+    # Database — PostgreSQL (Supabase) or SQLite fallback
     DATABASE_URL: str       = os.getenv("DATABASE_URL", "cybersphere.db")
+
+    # Supabase
+    SUPABASE_URL: str       = os.getenv("SUPABASE_URL", "")
+    SUPABASE_KEY: str       = os.getenv("SUPABASE_KEY", "")
+
+    # External API keys
+    VIRUSTOTAL_API_KEY: str     = os.getenv("VIRUSTOTAL_API_KEY", "")
+    SAFE_BROWSING_API_KEY: str  = os.getenv("SAFE_BROWSING_API_KEY", "")
+    ABUSEIPDB_API_KEY: str      = os.getenv("ABUSEIPDB_API_KEY", "")
+    GEMINI_API_KEY: str         = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+
+    # File encryption
+    ENCRYPTION_KEY: str         = os.getenv("ENCRYPTION_KEY", "")
+
+    # Storage
+    STORAGE_BUCKET: str         = os.getenv("STORAGE_BUCKET", "cybersphere-files")
 
     # SMTP Settings (for email notifications)
     SMTP_HOST: str          = os.getenv("SMTP_HOST", "smtp.gmail.com")
@@ -27,20 +42,26 @@ class Settings:
     SMTP_EMAIL: str         = os.getenv("SMTP_EMAIL", "")
     SMTP_APP_PASSWORD: str  = os.getenv("SMTP_APP_PASSWORD", "")
 
+    # Feature flags — auto-detected
+    @property
+    def USE_REAL_VT(self) -> bool:
+        return bool(self.VIRUSTOTAL_API_KEY)
 
-    # External API keys (optional — mock mode if not set)
-    VIRUSTOTAL_API_KEY: str     = os.getenv("VIRUSTOTAL_API_KEY", "")
-    SAFE_BROWSING_API_KEY: str  = os.getenv("SAFE_BROWSING_API_KEY", "")
-    ABUSEIPDB_API_KEY: str      = os.getenv("ABUSEIPDB_API_KEY", "")
+    @property
+    def USE_REAL_GSB(self) -> bool:
+        return bool(self.SAFE_BROWSING_API_KEY)
 
-    # Storage (Cloudflare R2 or Supabase Storage)
-    STORAGE_BUCKET: str         = os.getenv("STORAGE_BUCKET", "cybersphere-files")
-    STORAGE_ENDPOINT: str       = os.getenv("STORAGE_ENDPOINT", "")
-    STORAGE_ACCESS_KEY: str     = os.getenv("STORAGE_ACCESS_KEY", "")
-    STORAGE_SECRET_KEY: str     = os.getenv("STORAGE_SECRET_KEY", "")
+    @property
+    def USE_REAL_ABUSEIPDB(self) -> bool:
+        return bool(self.ABUSEIPDB_API_KEY)
 
-    # Feature flags
-    USE_MOCK_APIS: bool         = not bool(os.getenv("VIRUSTOTAL_API_KEY", ""))
+    @property
+    def USE_GEMINI(self) -> bool:
+        return bool(self.GEMINI_API_KEY)
+
+    @property
+    def USE_POSTGRES(self) -> bool:
+        return self.DATABASE_URL.startswith("postgresql")
 
 @lru_cache()
 def get_settings():

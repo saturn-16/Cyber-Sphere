@@ -8,9 +8,12 @@ import type {
   ThreatFeedItem,
 } from '../types';
 
+// Detect backend URL dynamically
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+
 // Create Axios instance pointing to FastAPI backend
-const API = axios.create({
-  baseURL: 'http://localhost:8000',
+export const API = axios.create({
+  baseURL: API_BASE_URL,
 });
 
 // Interceptor to attach the JWT token to requests if authenticated
