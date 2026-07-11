@@ -14,7 +14,7 @@ CyberSphere is a professional, SOC-inspired full-stack cybersecurity operations 
 CyberSphere uses a decoupled, zero-trust service-oriented architecture designed to handle secure files, execute compliance scanning, and run Machine Learning predictions asynchronously.
 
 ```mermaid
-graph TD
+graph LR
     %% Frontend Layer
     subgraph Client [Frontend Layer - React + Vite]
         UI[Glassmorphic SOC Dashboard] --> Store[Zustand State Manager]

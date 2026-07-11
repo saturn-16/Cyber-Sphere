@@ -364,13 +364,13 @@ export default function Dashboard() {
             {/* Architecture diagram SVG display */}
             <div className="lg:col-span-8 flex flex-col gap-4">
               <div className="flex justify-center bg-black/35 rounded-xl border border-cyber-border/40 p-4 overflow-x-auto">
-                <div className="relative min-w-[620px] h-[350px]">
+                <div className="relative min-w-[620px] w-full max-w-[760px] h-[400px]">
                   <AnimatePresence mode="wait">
                     {activeTab === 'phishguard' && (
                       <motion.svg
                         key="phishguard-svg"
-                        width="600"
-                        height="350"
+                        viewBox="0 0 600 350"
+                        className="w-full h-full"
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.98 }}
@@ -422,8 +422,8 @@ export default function Dashboard() {
                     {activeTab === 'secureshare' && (
                       <motion.svg
                         key="secureshare-svg"
-                        width="600"
-                        height="350"
+                        viewBox="0 0 600 350"
+                        className="w-full h-full"
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.98 }}
@@ -475,8 +475,8 @@ export default function Dashboard() {
                     {activeTab === 'cloudscan' && (
                       <motion.svg
                         key="cloudscan-svg"
-                        width="600"
-                        height="350"
+                        viewBox="0 0 600 350"
+                        className="w-full h-full"
                         initial={{ opacity: 0, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
                         exit={{ opacity: 0, scale: 0.98 }}
