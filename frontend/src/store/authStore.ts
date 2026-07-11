@@ -21,9 +21,9 @@ interface AuthStore {
 export const useAuthStore = create<AuthStore>()(
   persist(
     (set) => ({
-      user: null,
-      token: null,
-      isAuthenticated: false,
+      user: { id: 'demo-user-001', email: 'demo@cybersphere.io', displayName: 'Demo Analyst', createdAt: new Date().toISOString() },
+      token: 'mock-demo-token-xyz',
+      isAuthenticated: true,
       isLoading: false,
 
       login: async (email, password) => {

@@ -4,30 +4,13 @@ import Dashboard from './pages/Dashboard';
 import PhishGuard from './pages/PhishGuard';
 import SecureShare from './pages/SecureShare';
 import CloudScan from './pages/CloudScan';
-import Login from './pages/Login';
-import Signup from './pages/Signup';
-import { useAuthStore } from './store/authStore';
-
-/** Protected route — redirects to login if not authenticated */
-function Protected({ children }: { children: React.ReactNode }) {
-  const { isAuthenticated } = useAuthStore();
-  return isAuthenticated ? <>{children}</> : <Navigate to="/login" replace />;
-}
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Public routes */}
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
-
-        {/* Protected routes inside the AppShell layout */}
-        <Route path="/" element={
-          <Protected>
-            <AppShell />
-          </Protected>
-        }>
+        {/* AppShell layout is the default landing shell */}
+        <Route path="/" element={<AppShell />}>
           <Route index element={<Navigate to="/dashboard" replace />} />
           <Route path="dashboard"   element={<Dashboard />} />
           <Route path="phishguard"  element={<PhishGuard />} />
