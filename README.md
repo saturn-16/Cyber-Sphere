@@ -1,115 +1,156 @@
-# CyberSphere
+# 🌌 CyberSphere: Next-Gen Autonomous Security Operations Platform
 
-> Advanced Cybersecurity & Cloud Security Platform
+[![Vite Build](https://img.shields.io/badge/Vite-v8.0-00f5ff?style=flat-square&logo=vite)](https://vitejs.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-v0.110-39ff14?style=flat-square&logo=fastapi)](https://fastapi.tiangolo.com/)
+[![React](https://img.shields.io/badge/React-v18-ff007f?style=flat-square&logo=react)](https://react.dev/)
+[![License](https://img.shields.io/badge/License-MIT-violet?style=flat-square)](LICENSE)
 
-CyberSphere is a modern full-stack cybersecurity platform that combines phishing detection, secure encrypted file sharing, and cloud/web security analysis into one unified dashboard.
-
-Built with a futuristic SOC-inspired interface, CyberSphere focuses on real-world cybersecurity concepts such as malware scanning, AES-256 encryption, phishing detection, cloud misconfiguration analysis, secure file sharing, and threat intelligence.
-
----
-
-# Features
-
-## PhishGuard — AI-Powered Phishing Detection
-Detects suspicious and malicious content using multiple security checks.
-
-### Features
-- URL phishing detection
-- Message/email phishing analysis
-- QR code phishing scanning
-- Typo-squatting detection
-- Google Safe Browsing integration
-- VirusTotal integration
-- Threat scoring system
-- Scan history tracking
-
-### Example Detection
-- Fake banking links
-- Suspicious login pages
-- Giveaway scams
-- Credential harvesting attempts
+CyberSphere is a professional, SOC-inspired full-stack cybersecurity operations platform. It integrates machine learning-driven phishing detection, high-performance web compliance auditing, and secure zero-trust encrypted file sharing into a unified, glassmorphic cybersecurity control center.
 
 ---
 
-## SecureShare — Encrypted File Sharing System
-A secure cloud file-sharing module designed with cybersecurity principles.
+## 🏛️ Comprehensive System Architecture
 
-### Features
-- AES-256 file encryption
-- Malware scanning workflow
-- Secure shareable links
-- Password-protected sharing
-- Link expiry system
-- Quarantine system for suspicious files
-- Download tracking
-- Secure cloud storage integration
+CyberSphere uses a decoupled, zero-trust service-oriented architecture designed to handle secure files, execute compliance scanning, and run Machine Learning predictions asynchronously.
 
-### Secure Workflow
-Upload File → Malware Scan → Encrypt File → Store Securely → Generate Secure Link
+```mermaid
+graph TD
+    %% Frontend Layer
+    subgraph Client [Frontend Layer - React + Vite]
+        UI[Glassmorphic SOC Dashboard] --> Store[Zustand State Manager]
+        Store --> API_Client[Axios API Client]
+    end
 
----
+    %% API Gateway Layer
+    subgraph Gateway [API Gateway Layer - FastAPI]
+        API_Client --> CORS[CORS Middleware]
+        CORS --> AuthRouter[Auth Router]
+        CORS --> PhishRouter[PhishGuard Router]
+        CORS --> ShareRouter[SecureShare Router]
+        CORS --> ScanRouter[CloudScan Router]
+    end
 
-## CloudScan — Cloud & Website Security Scanner
-Analyzes websites for vulnerabilities, weak configurations, and exposed sensitive data.
+    %% Engine & Logic Layer
+    subgraph Engines [Engine & Logic Layer]
+        PhishRouter --> ML_Engine[RandomForest ML Classifier]
+        PhishRouter --> VT_API[VirusTotal API Adapter]
+        PhishRouter --> Abuse_API[AbuseIPDB Reputation Check]
+        
+        ShareRouter --> Fernet_Enc[AES-256 Fernet Payload Encryptor]
+        ShareRouter --> Mal_Scanner[Heuristic Malware Scanner]
+        
+        ScanRouter --> Aud_Scan[TLS Socket & Security Header Auditor]
+    end
 
-### Features
-- HTTPS / SSL analysis
-- Security header analysis
-- Exposed `.env` detection
-- Exposed `.git` detection
-- Open admin panel detection
-- Cloud misconfiguration checks
-- API key exposure checks
-- Security scoring system
-- Vulnerability reporting
+    %% Database & Storage Layer
+    subgraph Storage [Persistence & Storage Layer]
+        AuthRouter --> DB_Adapter[(Database Adapter: SQLite / Supabase Postgres)]
+        ShareRouter --> DB_Adapter
+        ShareRouter --> R2_Storage[(Storage Adapter: Local Uploads / Cloudflare R2)]
+        ScanRouter --> DB_Adapter
+    end
 
-### Detects Issues Like
-- Missing security headers
-- Weak SSL/TLS configuration
-- Public sensitive files
-- Exposed cloud configurations
+    %% Custom Styling
+    style Client fill:#001524,stroke:#00f5ff,stroke-width:2px,color:#fff
+    style Gateway fill:#0d1b2a,stroke:#39ff14,stroke-width:2px,color:#fff
+    style Engines fill:#1b263b,stroke:#ff9500,stroke-width:2px,color:#fff
+    style Storage fill:#000814,stroke:#7c3ade,stroke-width:2px,color:#fff
+```
 
----
+### 1. PhishGuard Engine (Machine Learning & OSINT reputation)
+*   **Machine Learning Classifier:** Runs a custom-trained Scikit-Learn `RandomForestClassifier` (achieving **81.97% test accuracy**). It evaluates URLs based on features like token length, domain entropy, presence of IP addresses, digit-to-letter ratios, and suspicious keywords.
+*   **Active Reputation Checks:** Queries VirusTotal (IP/URL scans) and AbuseIPDB dynamically to fetch live, real-time threat intelligence.
+*   **Heuristics Parser:** Conducts typo-squatting audits against popular brand aliases and analyzes QR code payloads.
 
-# Tech Stack
+### 2. SecureShare Engine (Zero-Trust Cryptographic Storage)
+*   **Heuristic Malware Scan:** Scans uploaded files to match file signatures against known malware patterns and blocks malicious executables.
+*   **AES-256 Encryption:** Encrypts file streams on-the-fly using AES-256 Symmetric Encryption (via `cryptography.fernet`). Encryption keys are loaded from environment secrets and remain stable across restarts.
+*   **Sharing & Expiry Lifecycle:** Generates short-lived, unique share tokens. The database automatically checks timestamps on download requests and denies access to expired resources.
 
-## Frontend
-- React
-- Vite
-- TailwindCSS
-- Framer Motion
-- TypeScript
-
-## Backend
-- FastAPI
-- Python
-
-## Database & Cloud
-- Supabase
-- Cloudflare R2
-
-## Security APIs
-- VirusTotal API
-- Google Safe Browsing API
-
-## Security Tools
-- AES-256 Encryption
-- Malware scanning workflow
-- URL reputation analysis
+### 3. CloudScan Engine (Compliance & Socket Audits)
+*   **Security Header Scans:** Initiates passive HTTP handshakes to audit HSTS (`Strict-Transport-Security`), CSP (`Content-Security-Policy`), `X-Frame-Options`, and `X-Content-Type-Options`.
+*   **TLS/SSL Audit:** Establishes direct SSL socket handshakes (`ssl.create_default_context()`) to inspect peer certificates, issuer info, expiration timestamps, and encryption strengths.
+*   **Directory Exposure Scans:** Tests target paths for standard misconfigurations (e.g., exposed `.git/` directories, exposed `.env` files, open `/admin` directories, and unconfigured CORS headers).
 
 ---
 
-# Project Architecture
+## 🛠️ Technology Stack
 
-```text
-Frontend (React)
-       ↓
-FastAPI Backend
-       ↓
---------------------------------
-| PhishGuard Engine            |
-| SecureShare Engine           |
-| CloudScan Engine             |
---------------------------------
-       ↓
-Supabase Database & Storage
+| Component | Technology | Role |
+| :--- | :--- | :--- |
+| **Frontend** | React 18, Vite 8, TypeScript, TailwindCSS | High-performance client, responsive layouts |
+| **Animation** | Framer Motion | Dynamic SVG flow lines, interactive element cascades |
+| **State** | Zustand + Redux-like persistence | Global state, persistent UI theme configs |
+| **Backend** | FastAPI, Uvicorn, Python 3.11 | High-throughput, async request gateway |
+| **Database** | SQLite / Supabase PostgreSQL (`psycopg2`) | Unified relational storage adapter |
+| **Security** | Scikit-Learn, Cryptography (Fernet) | Machine Learning inference, Symmetric Encryption |
+
+---
+
+## 🚀 Getting Started
+
+### 📋 Prerequisites
+*   Python 3.9+
+*   Node.js 18+
+*   npm or yarn
+
+### 📥 1. Clone & Configure Workspace
+```bash
+git clone https://github.com/saturn-16/Cyber-Sphere.git
+cd Cyber-Sphere
+```
+
+Create a `.env` file inside the `backend/` directory:
+```ini
+# JWT configuration
+SECRET_KEY=generate-a-long-random-string-here
+
+# Database Config (defaults to SQLite if not specified)
+# DATABASE_URL=postgresql://user:pass@host:port/dbname
+
+# API Keys (optional; enables real APIs, otherwise operates in mock fallback mode)
+VIRUSTOTAL_API_KEY=your_virustotal_key
+ABUSEIPDB_API_KEY=your_abuseipdb_key
+
+# AES-256 encryption key (generate with: python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())")
+ENCRYPTION_KEY=your_fernet_aes_key
+```
+
+---
+
+### 🐍 2. Backend Installation & Run
+```bash
+cd backend
+# Create virtual environment
+python -m venv venv
+# Activate virtual environment (Windows)
+venv\Scripts\activate
+# Activate virtual environment (macOS/Linux)
+source venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+
+# Run the FastAPI server
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+The interactive Swagger API documentation will be available at [http://localhost:8000/docs](http://localhost:8000/docs).
+
+---
+
+### ⚛️ 3. Frontend Installation & Run
+```bash
+cd ../frontend
+# Install npm dependencies
+npm install
+
+# Run the Vite local development server
+npm run dev
+```
+The client dashboard will be available at [http://localhost:5173/](http://localhost:5173/).
+
+---
+
+## 🔒 Security Operations
+*   **Direct Dashboard Access:** The platform is configured for instant, frictionless previewing and testing. It bypasses auth screens by default, initializing with a pre-configured **Demo Analyst** profile.
+*   **Automatic Database Migrations:** SQLite databases and table schemas are initialized on application startup.
