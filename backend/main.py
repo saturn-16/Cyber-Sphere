@@ -8,7 +8,7 @@ Entry point. Run with:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from routers import auth, phishguard, secureshare, cloudscan, dashboard
+from routers import auth, phishguard, secureshare, cloudscan, dashboard, reports
 from database import create_tables
 
 app = FastAPI(
@@ -20,10 +20,9 @@ app = FastAPI(
 )
 
 # ── CORS ──────────────────────────────────────────────────────────────────────
-# TEMPORARY: Allow all origins to debug connectivity
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["http://localhost:5173", "https://cybersphere.vercel.app"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -40,6 +39,7 @@ app.include_router(phishguard.router,  prefix="/api/phish",     tags=["PhishGuar
 app.include_router(secureshare.router, prefix="/api/files",     tags=["SecureShare"])
 app.include_router(cloudscan.router,   prefix="/api/scan",      tags=["CloudScan"])
 app.include_router(dashboard.router,   prefix="/api/dashboard", tags=["Dashboard"])
+app.include_router(reports.router,     prefix="/api/reports",   tags=["Reports"])
 
 @app.get("/health")
 def health():

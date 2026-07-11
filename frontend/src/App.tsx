@@ -6,7 +6,6 @@ import SecureShare from './pages/SecureShare';
 import CloudScan from './pages/CloudScan';
 import Login from './pages/Login';
 import Signup from './pages/Signup';
-import SharedFile from './pages/SharedFile';
 import { useAuthStore } from './store/authStore';
 
 /** Protected route — redirects to login if not authenticated */
@@ -22,7 +21,6 @@ export default function App() {
         {/* Public routes */}
         <Route path="/login" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
-        <Route path="/share/:token" element={<SharedFile />} />
 
         {/* Protected routes inside the AppShell layout */}
         <Route path="/" element={

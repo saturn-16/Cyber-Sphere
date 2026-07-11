@@ -5,7 +5,7 @@ export default {
     extend: {
       colors: {
         cyber: {
-          bg:       '#020817',   // deep space black
+          bg:       '#000000',   // pure black
           surface:  '#0d1117',   // card background
           border:   '#1e293b',   // subtle border
           cyan:     '#00f5ff',   // primary neon cyan

@@ -3,6 +3,7 @@ import { persist } from 'zustand/middleware';
 import axios from 'axios';
 import type { User } from '../types';
 
+
 interface AuthStore {
   user: User | null;
   token: string | null;
@@ -15,7 +16,18 @@ interface AuthStore {
   setLoading: (v: boolean) => void;
 }
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000/api';
+// Mock users stored in localStorage for demo purposes
+const MOCK_USERS_KEY = 'cybersphere_users';
+
+function getStoredUsers(): Record<string, { password: string; user: User }> {
+  try { return JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '{}'); }
+  catch { return {}; }
+}
+
+function generateToken(userId: string): string {
+  const payload = btoa(JSON.stringify({ sub: userId, exp: Date.now() + 86400000 }));
+  return `mock.${payload}.signature`;
+}
 
 export const useAuthStore = create<AuthStore>()(
   persist(
@@ -28,36 +40,37 @@ export const useAuthStore = create<AuthStore>()(
       login: async (email, password) => {
         set({ isLoading: true });
         try {
-          const response = await axios.post(`${API_URL}/auth/login`, { email, password });
-          const { token, user } = response.data;
+          const res = await axios.post('http://localhost:8000/api/auth/login', { email, password });
           set({
-            user,
-            token,
+            user: res.data.user,
+            token: res.data.token,
             isAuthenticated: true,
             isLoading: false,
           });
-        } catch (error: any) {
+        } catch (err: any) {
           set({ isLoading: false });
-          throw new Error(error.response?.data?.detail || 'Invalid email or password');
+          const msg = err.response?.data?.detail || 'Invalid email or password';
+          throw new Error(msg);
         }
       },
 
       signup: async (email, password, displayName) => {
         set({ isLoading: true });
         try {
-          const response = await axios.post(`${API_URL}/auth/register`, { email, password, displayName });
-          const { token, user } = response.data;
+          const res = await axios.post('http://localhost:8000/api/auth/register', { email, password, displayName });
           set({
-            user,
-            token,
+            user: res.data.user,
+            token: res.data.token,
             isAuthenticated: true,
             isLoading: false,
           });
-        } catch (error: any) {
+        } catch (err: any) {
           set({ isLoading: false });
-          throw new Error(error.response?.data?.detail || 'An error occurred during registration');
+          const msg = err.response?.data?.detail || 'An account with this email already exists';
+          throw new Error(msg);
         }
       },
+
 
       logout: () => set({ user: null, token: null, isAuthenticated: false }),
       setLoading: (v) => set({ isLoading: v }),

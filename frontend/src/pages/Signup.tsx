@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
+import { Zap, Mail, Lock, User, Eye, EyeOff, AlertCircle, CheckCircle } from 'lucide-react';
 import NeonButton from '../components/ui/NeonButton';
 import ParticleBackground from '../components/ui/ParticleBackground';
 import { useAuthStore } from '../store/authStore';
-import Logo from '../components/layout/Logo';
 
 export default function Signup() {
   const [form, setForm] = useState({ displayName: '', email: '', password: '', confirm: '' });
@@ -57,9 +56,18 @@ export default function Signup() {
         transition={{ duration: 0.5 }}
         className="relative z-10 w-full max-w-md px-4"
       >
-        <div className="flex flex-col items-center mb-8">
-           <Logo size={64} className="mb-2" />
-           <p className="text-cyber-muted text-[10px] font-mono tracking-[0.4em] uppercase opacity-50">Industrial Grade · Neural Core</p>
+        <div className="text-center mb-8">
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ type: 'spring', stiffness: 200, delay: 0.1 }}
+            className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-cyber-violet/10 border border-cyber-violet/30 mb-4"
+            style={{ boxShadow: '0 0 40px rgba(124,58,237,0.2)' }}
+          >
+            <Zap className="text-cyber-violet" size={32} />
+          </motion.div>
+          <h1 className="font-orbitron text-3xl font-bold gradient-text-cyber">CyberSphere</h1>
+          <p className="text-cyber-muted text-sm mt-1">Create your operator account</p>
         </div>
 
         <div className="glass-strong rounded-2xl border border-cyber-violet/15 p-8"

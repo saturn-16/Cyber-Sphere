@@ -4,7 +4,7 @@ import uuid, hashlib
 from datetime import datetime, timedelta
 from typing import Optional
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, HTTPException, Depends, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr
 import jwt
@@ -51,92 +51,63 @@ class LoginRequest(BaseModel):
 
 # ── Routes ────────────────────────────────────────────────────────────────────
 @router.post("/register", status_code=201)
-def register(req: RegisterRequest):
-    print(f"DEBUG: Register attempt for {req.email}")
+def register(req: RegisterRequest, request: Request):
     conn = get_connection()
+    cur = conn.cursor()
+    existing = cur.execute("SELECT id FROM users WHERE email = ?", (req.email.lower(),)).fetchone()
+    if existing:
+        raise HTTPException(status_code=409, detail="Email already registered")
+    user_id = str(uuid.uuid4())
+    display_name = req.displayName or req.email.split("@")[0]
+    cur.execute(
+        "INSERT INTO users (id, email, displayName, password_hash) VALUES (?,?,?,?)",
+        (user_id, req.email.lower(), display_name, hash_password(req.password))
+    )
+    conn.commit(); conn.close()
+
+    # Trigger welcome email in background
     try:
-        user_id = str(uuid.uuid4())
-        hashed = hash_password(req.password)
-        d_name = req.displayName or req.email.split("@")[0]
-        
-        if settings.USE_POSTGRES:
-            print("DEBUG: Using PostgreSQL")
-            cur = conn.cursor()
-            cur.execute("SELECT id FROM users WHERE email = %s", (req.email.lower(),))
-            if cur.fetchone():
-                print("DEBUG: Email already exists")
-                raise HTTPException(status_code=409, detail="Email already registered")
-            
-            cur.execute(
-                'INSERT INTO users (id, email, "displayName", password_hash) VALUES (%s,%s,%s,%s)',
-                (user_id, req.email.lower(), d_name, hashed)
-            )
-            conn.commit()
-            cur.close()
-        else:
-            print("DEBUG: Using SQLite")
-            cur = conn.cursor()
-            existing = cur.execute("SELECT id FROM users WHERE email = ?", (req.email.lower(),)).fetchone()
-            if existing:
-                print("DEBUG: Email already exists")
-                raise HTTPException(status_code=409, detail="Email already registered")
-            cur.execute(
-                "INSERT INTO users (id, email, displayName, password_hash) VALUES (?,?,?,?)",
-                (user_id, req.email.lower(), d_name, hashed)
-            )
-            conn.commit()
-        print("DEBUG: Registration successful")
-    except Exception as e:
-        print(f"DEBUG: Registration ERROR: {str(e)}")
-        raise HTTPException(status_code=500, detail=str(e))
-    finally:
-        conn.close()
-        
+        from email_service import send_welcome_email
+        send_welcome_email(req.email.lower(), display_name)
+    except Exception:
+        pass
+
     return {
         "token": create_token(user_id, req.email),
-        "user": {"id": user_id, "email": req.email, "displayName": req.displayName}
+        "user": {"id": user_id, "email": req.email, "displayName": display_name}
     }
 
 @router.post("/login")
-def login(req: LoginRequest):
+def login(req: LoginRequest, request: Request):
     conn = get_connection()
-    try:
-        if settings.USE_POSTGRES:
-            cur = conn.cursor()
-            cur.execute(
-                'SELECT id, email, "displayName" FROM users WHERE email = %s AND password_hash = %s',
-                (req.email.lower(), hash_password(req.password))
-            )
-            row = cur.fetchone()
-            cur.close()
-        else:
-            row = conn.execute(
-                "SELECT id, email, displayName FROM users WHERE email = ? AND password_hash = ?",
-                (req.email.lower(), hash_password(req.password))
-            ).fetchone()
-    finally:
-        conn.close()
-        
+    cur = conn.cursor()
+    row = cur.execute(
+        "SELECT id, email, displayName FROM users WHERE email = ? AND password_hash = ?",
+        (req.email.lower(), hash_password(req.password))
+    ).fetchone()
+    conn.close()
     if not row:
         raise HTTPException(status_code=401, detail="Invalid email or password")
+
+    # Trigger login notification email in background
+    try:
+        from email_service import send_login_alert
+        ip = request.client.host if request.client else "127.0.0.1"
+        ua = request.headers.get("user-agent", "Unknown Client")
+        send_login_alert(row["email"], row["displayName"] or row["email"].split("@")[0], ip, ua)
+    except Exception:
+        pass
+
     return {
         "token": create_token(row["id"], row["email"]),
         "user": {"id": row["id"], "email": row["email"], "displayName": row["displayName"]}
     }
 
+
 @router.get("/me")
 def me(current_user: dict = Depends(get_current_user)):
     conn = get_connection()
-    try:
-        if settings.USE_POSTGRES:
-            cur = conn.cursor()
-            cur.execute('SELECT id, email, "displayName", created_at FROM users WHERE id = %s', (current_user["sub"],))
-            row = cur.fetchone()
-            cur.close()
-        else:
-            row = conn.execute("SELECT id, email, displayName, created_at FROM users WHERE id = ?", (current_user["sub"],)).fetchone()
-    finally:
-        conn.close()
-        
+    row = conn.execute("SELECT id, email, displayName, created_at FROM users WHERE id = ?", (current_user["sub"],)).fetchone()
+    conn.close()
     if not row: raise HTTPException(404, "User not found")
     return dict(row)

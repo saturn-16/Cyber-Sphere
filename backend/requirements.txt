@@ -2,27 +2,34 @@
 # ─────────────────────────────────
 # Install with: pip install -r requirements.txt
 
-fastapi
-uvicorn[standard]
-python-multipart
-pydantic[email]
-PyJWT
-cryptography
-requests
-python-dotenv
+fastapi==0.111.0
+uvicorn[standard]==0.30.0
+python-multipart==0.0.9
+pydantic[email]==2.7.0
+PyJWT==2.8.0
+cryptography==42.0.5
 
-# PostgreSQL driver (for Supabase connection)
-psycopg2-binary==2.9.9
+# Database (switch to asyncpg for Supabase/PostgreSQL in production)
+# asyncpg==0.29.0
 
-# QR code scanning
-pyzbar==0.1.9
-opencv-python-headless==4.9.0.80
-
-# AI Analysis
-google-generativeai==0.5.3
+# External API clients (install when keys are available)
+# requests==2.32.0        # VirusTotal, Safe Browsing, AbuseIPDB
+# python-clamav==0.4.1    # ClamAV malware scanning
+# pyzbar==0.1.9           # QR code decoding
+# opencv-python==4.9.0.80 # QR code image processing
 
 # Optional: PDF report generation
-# reportlab==4.2.0
+reportlab==4.2.0
+# weasyprint==62.1
 
 # Optional: AI explanations
 # openai==1.30.0
+
+python-dotenv==1.0.1
+
+# Machine Learning URL Scanning
+pandas==2.2.2
+numpy==1.26.4
+scikit-learn==1.4.2
+
+

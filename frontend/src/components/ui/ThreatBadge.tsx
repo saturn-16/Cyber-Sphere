@@ -24,8 +24,8 @@ const sizeMap = {
 const iconSize = { sm: 10, md: 12, lg: 14 };
 
 export default function ThreatBadge({ level, size = 'md', showIcon = true }: ThreatBadgeProps) {
-  const safeLevel = (level && config[level]) ? level : 'unknown';
-  const { label, classes, icon: Icon } = config[safeLevel];
+  const badgeConfig = config[level] || config['unknown'];
+  const { label, classes, icon: Icon } = badgeConfig;
   return (
     <span className={clsx(
       'inline-flex items-center font-mono font-semibold rounded-md border tracking-widest',

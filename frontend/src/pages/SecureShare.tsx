@@ -4,21 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   Share2, Upload, Lock, Clock, Trash2, Copy, Check,
   Shield, AlertTriangle, FileText, Download, Link,
-  Database, ShieldCheck, Zap
 } from 'lucide-react';
 import GlowCard from '../components/ui/GlowCard';
 import NeonButton from '../components/ui/NeonButton';
-import ScanProcessConsole from '../components/ui/ScanProcessConsole';
 import { uploadFile, getFiles, deleteFile } from '../services/api';
 import type { SecureFile } from '../types';
-
-const UPLOAD_PHASES = [
-  { message: "Initializing AES-256 Encryption Tunnel...", duration: 1200 },
-  { message: "Generating RSA-4096 Key Pair...", duration: 800 },
-  { message: "Fragmenting & Encrypting Data Blocks...", duration: 1500 },
-  { message: "Neural Malware Scan Active...", duration: 2000 },
-  { message: "Synchronizing with Secure Vault...", duration: 1000 },
-];
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`;
@@ -34,7 +24,7 @@ function MalwareBadge({ status }: { status: SecureFile['malwareStatus'] }) {
     unknown:  { label: 'UNKNOWN',  color: '#64748b' },
   }[status];
   return (
-    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-bold border tracking-wider"
+    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-mono font-semibold border"
       style={{ color: cfg.color, borderColor: `${cfg.color}40`, background: `${cfg.color}10` }}>
       {status === 'scanning' && <div className="w-1 h-1 rounded-full animate-pulse" style={{ background: cfg.color }} />}
       {cfg.label}
@@ -60,6 +50,7 @@ function UploadZone({ onUpload }: { onUpload: (f: File) => void }) {
   const [options, setOptions] = useState({ password: '', expiryHours: 0, usePassword: false });
   const [dropping, setDropping] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [pending, setPending] = useState<File | null>(null);
 
   const onDrop = useCallback((accepted: File[]) => {
@@ -77,97 +68,97 @@ function UploadZone({ onUpload }: { onUpload: (f: File) => void }) {
   const handleUpload = async () => {
     if (!pending) return;
     setUploading(true);
-    
-    // Parallel API call and minimum UI delay
-    const apiPromise = uploadFile(pending, { 
-      password: options.usePassword ? options.password : undefined, 
-      expiryHours: options.expiryHours || undefined 
-    });
-    const delayPromise = new Promise(resolve => setTimeout(resolve, 6000));
-
-    try {
-      await Promise.all([apiPromise, delayPromise]);
-      onUpload(pending);
-      setPending(null);
-    } catch (err) {
-      console.error('Upload Error:', err);
-    } finally {
-      setUploading(false);
+    // Simulate encryption progress
+    for (let i = 0; i <= 100; i += 4) {
+      await new Promise(r => setTimeout(r, 40));
+      setProgress(i);
     }
+    await uploadFile(pending, { password: options.usePassword ? options.password : undefined, expiryHours: options.expiryHours || undefined });
+    onUpload(pending);
+    setPending(null);
+    setProgress(0);
+    setUploading(false);
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Drop zone */}
       <div {...getRootProps()} className={`border-2 border-dashed rounded-xl p-10 text-center cursor-pointer transition-all ${
-        isDragActive || dropping ? 'border-cyber-cyan/60 bg-cyber-cyan/5' : 'border-cyber-border hover:border-cyber-green/40 hover:bg-cyber-green/3 shadow-inner'
+        isDragActive || dropping ? 'border-cyber-cyan/60 bg-cyber-cyan/5' : 'border-cyber-border hover:border-cyber-green/40 hover:bg-cyber-green/3'
       }`}>
         <input {...getInputProps()} />
         <motion.div animate={isDragActive ? { scale: 1.1 } : { scale: 1 }}>
-          <Upload className={`mx-auto mb-3 transition-colors ${isDragActive ? 'text-cyber-cyan' : 'text-cyber-muted'}`} size={40} />
+          <Upload className={`mx-auto mb-3 transition-colors ${isDragActive ? 'text-cyber-cyan' : 'text-cyber-muted'}`} size={36} />
         </motion.div>
         {pending ? (
           <div>
-            <ShieldCheck className="mx-auto mb-2 text-cyber-green" size={28} />
-            <p className="font-orbitron text-sm font-bold text-cyber-text uppercase tracking-wider">{pending.name}</p>
-            <p className="text-[10px] font-mono text-cyber-muted mt-1 uppercase">{formatBytes(pending.size)} · STAGED FOR ENCRYPTION</p>
+            <FileText className="mx-auto mb-2 text-cyber-green" size={24} />
+            <p className="font-medium text-cyber-text">{pending.name}</p>
+            <p className="text-sm text-cyber-muted mt-1">{formatBytes(pending.size)}</p>
+            <p className="text-xs text-cyber-cyan mt-2">File ready · Click to change</p>
           </div>
         ) : (
           <div>
-            <p className="text-cyber-text font-orbitron text-sm font-bold uppercase tracking-wider">Deploy File to Vault</p>
-            <p className="text-xs text-cyber-muted mt-1">Drag & drop or click to select</p>
-            <p className="text-[10px] font-mono text-cyber-muted/40 mt-4 tracking-widest uppercase italic">Automatic AES-256 Cryptographic Tunneling Enabled</p>
+            <p className="text-cyber-text font-medium">Drag & drop files here</p>
+            <p className="text-sm text-cyber-muted mt-1">or click to browse</p>
+            <p className="text-xs text-cyber-muted/60 mt-3">All files are AES-256 encrypted before upload</p>
           </div>
         )}
       </div>
 
       {/* Options */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div className="p-4 rounded-xl bg-white/3 border border-cyber-border space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        {/* Password toggle */}
+        <div className="p-3 rounded-lg bg-white/3 border border-cyber-border space-y-2">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2 text-xs font-bold text-cyber-text uppercase tracking-widest">
-              <Lock size={12} className="text-cyber-cyan" /> Secure Password
+            <div className="flex items-center gap-2 text-sm text-cyber-text">
+              <Lock size={13} className="text-cyber-cyan" /> Password Protection
             </div>
             <button onClick={() => setOptions(o => ({ ...o, usePassword: !o.usePassword }))}
-              className={`w-10 h-5 rounded-full transition-all relative ${options.usePassword ? 'bg-cyber-cyan shadow-[0_0_10px_rgba(0,245,255,0.3)]' : 'bg-cyber-border'}`}>
-              <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${options.usePassword ? 'left-6' : 'left-0.5'}`} />
+              className={`w-9 h-5 rounded-full transition-all relative ${options.usePassword ? 'bg-cyber-cyan' : 'bg-cyber-border'}`}>
+              <div className={`w-3.5 h-3.5 rounded-full bg-white absolute top-0.5 transition-all ${options.usePassword ? 'left-5' : 'left-0.5'}`} />
             </button>
           </div>
           {options.usePassword && (
             <input type="password" value={options.password} onChange={e => setOptions(o => ({ ...o, password: e.target.value }))}
-              placeholder="Define vault password..."
-              className="w-full bg-black/40 border border-cyber-border rounded-lg px-3 py-2 text-xs text-cyber-text placeholder-cyber-muted/30 font-mono outline-none focus:border-cyber-cyan/40 transition-all" />
+              placeholder="Set share password…"
+              className="w-full bg-white/5 border border-cyber-border rounded-lg px-3 py-2 text-sm text-cyber-text placeholder-cyber-muted/50 transition-all" />
           )}
         </div>
 
-        <div className="p-4 rounded-xl bg-white/3 border border-cyber-border">
-          <div className="flex items-center gap-2 text-xs font-bold text-cyber-text uppercase tracking-widest mb-3">
-            <Clock size={12} className="text-cyber-amber" /> Link Expiry
+        {/* Expiry */}
+        <div className="p-3 rounded-lg bg-white/3 border border-cyber-border">
+          <div className="flex items-center gap-2 text-sm text-cyber-text mb-2">
+            <Clock size={13} className="text-cyber-amber" /> Link Expiry
           </div>
           <select value={options.expiryHours} onChange={e => setOptions(o => ({ ...o, expiryHours: +e.target.value }))}
-            className="w-full bg-black/40 border border-cyber-border rounded-lg px-3 py-2 text-xs text-cyber-text font-mono outline-none focus:border-cyber-amber/40 transition-all">
-            <option value={0}>PERMANENT VAULT STORAGE</option>
-            <option value={1}>1 HOUR TTL</option>
-            <option value={24}>24 HOUR TTL</option>
-            <option value={72}>72 HOUR TTL</option>
-            <option value={168}>168 HOUR TTL</option>
+            className="w-full bg-white/5 border border-cyber-border rounded-lg px-3 py-2 text-sm text-cyber-text transition-all">
+            <option value={0}>Never expires</option>
+            <option value={1}>1 hour</option>
+            <option value={24}>24 hours</option>
+            <option value={72}>3 days</option>
+            <option value={168}>1 week</option>
           </select>
         </div>
       </div>
 
+      {/* Encryption progress */}
       {uploading && (
-        <div className="mt-4">
-          <ScanProcessConsole 
-            phases={UPLOAD_PHASES} 
-            isScanning={uploading} 
-            onComplete={() => {}} 
-          />
+        <div className="space-y-2">
+          <div className="flex justify-between text-xs font-mono text-cyber-muted">
+            <span>{progress < 50 ? '🔐 AES-256 Encrypting…' : progress < 90 ? '🦠 Malware Scanning…' : '☁️ Uploading…'}</span>
+            <span>{progress}%</span>
+          </div>
+          <div className="h-1.5 bg-cyber-border rounded-full overflow-hidden">
+            <motion.div className="h-full rounded-full bg-gradient-to-r from-cyber-cyan to-cyber-violet"
+              animate={{ width: `${progress}%` }} transition={{ duration: 0.1 }} />
+          </div>
         </div>
       )}
 
       <NeonButton variant="green" onClick={handleUpload} loading={uploading} disabled={!pending || uploading}
-        className="w-full justify-center h-12" icon={<Shield size={16} />}>
-        Execute Encrypted Upload
+        className="w-full justify-center" icon={<Shield size={15} />}>
+        Encrypt & Upload Securely
       </NeonButton>
     </div>
   );
@@ -181,47 +172,47 @@ function FileCard({ file, onDelete }: { file: SecureFile; onDelete: () => void }
       className={`p-4 rounded-xl border transition-all ${file.malwareStatus === 'infected'
         ? 'border-cyber-red/30 bg-cyber-red/5'
         : isExpired ? 'border-cyber-muted/20 opacity-60' : 'border-cyber-border hover:border-cyber-green/30'}`}>
-      <div className="flex items-start gap-4">
-        <div className="p-2.5 rounded-lg bg-white/5 flex-shrink-0">
-          {file.malwareStatus === 'infected' ? <AlertTriangle size={20} className="text-cyber-red" /> : <FileText size={20} className="text-cyber-green" />}
+      <div className="flex items-start gap-3">
+        <div className="p-2 rounded-lg bg-white/5 flex-shrink-0">
+          {file.malwareStatus === 'infected' ? <AlertTriangle size={18} className="text-cyber-red" /> : <FileText size={18} className="text-cyber-green" />}
         </div>
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap mb-1.5">
-            <span className="text-sm font-bold text-cyber-text truncate">{file.filename}</span>
+          <div className="flex items-center gap-2 flex-wrap mb-1">
+            <span className="text-sm font-medium text-cyber-text truncate">{file.filename}</span>
             <MalwareBadge status={file.malwareStatus} />
-            {file.encrypted && <span className="text-[9px] font-mono font-bold text-cyber-cyan border border-cyber-cyan/30 px-1.5 py-0.5 rounded uppercase tracking-wider">AES-256-GCM</span>}
-            {file.passwordProtected && <Lock size={11} className="text-cyber-amber" />}
+            {file.encrypted && <span className="text-[10px] font-mono text-cyber-cyan border border-cyber-cyan/30 px-1.5 py-0.5 rounded">AES-256</span>}
+            {file.passwordProtected && <Lock size={10} className="text-cyber-amber" />}
           </div>
-          <div className="flex items-center gap-4 text-[10px] font-mono text-cyber-muted flex-wrap uppercase tracking-tight">
-            <span className="flex items-center gap-1"><Database size={10} /> {formatBytes(file.size)}</span>
-            <span className="flex items-center gap-1"><Zap size={10} /> {file.downloadCount} SESSIONS</span>
-            {file.expiryTime && <span className={isExpired ? 'text-cyber-red font-bold' : ''}>
-              {isExpired ? 'EXPIRED' : `TTL: ${new Date(file.expiryTime).toLocaleDateString()}`}
+          <div className="flex items-center gap-3 text-xs text-cyber-muted flex-wrap">
+            <span>{formatBytes(file.size)}</span>
+            <span>↓ {file.downloadCount} downloads</span>
+            {file.expiryTime && <span className={isExpired ? 'text-cyber-red' : ''}>
+              {isExpired ? 'EXPIRED' : `Expires ${new Date(file.expiryTime).toLocaleDateString()}`}
             </span>}
           </div>
           {/* Share link */}
           {file.shareToken && !isExpired && file.malwareStatus !== 'infected' && (
-            <div className="flex items-center gap-2 mt-3 bg-black/40 rounded-lg px-3 py-2 border border-cyber-border">
-              <Link size={11} className="text-cyber-cyan flex-shrink-0" />
-              <span className="text-[10px] font-mono text-cyber-muted truncate flex-1">{shareUrl}</span>
+            <div className="flex items-center gap-2 mt-2 bg-white/3 rounded-lg px-3 py-1.5 border border-cyber-border">
+              <Link size={11} className="text-cyber-muted flex-shrink-0" />
+              <span className="text-[11px] font-mono text-cyber-muted truncate flex-1">{shareUrl}</span>
               <CopyButton text={shareUrl} />
             </div>
           )}
           {file.malwareStatus === 'infected' && (
-            <div className="mt-2 flex items-center gap-2 text-xs text-cyber-red font-bold">
-              <AlertTriangle size={11} /> FILE QUARANTINED — MALWARE SIGNATURE DETECTED
+            <div className="mt-2 flex items-center gap-2 text-xs text-cyber-red">
+              <AlertTriangle size={11} /> File quarantined — malware detected, sharing disabled
             </div>
           )}
         </div>
         {/* Actions */}
         <div className="flex gap-1 flex-shrink-0">
           {file.malwareStatus === 'clean' && !isExpired && (
-            <button className="p-2 rounded-lg text-cyber-muted hover:text-cyber-cyan hover:bg-cyber-cyan/10 transition-all">
-              <Download size={16} />
+            <button className="p-1.5 rounded text-cyber-muted hover:text-cyber-cyan hover:bg-cyber-cyan/10 transition-all">
+              <Download size={14} />
             </button>
           )}
-          <button onClick={onDelete} className="p-2 rounded-lg text-cyber-muted hover:text-cyber-red hover:bg-cyber-red/10 transition-all">
-            <Trash2 size={16} />
+          <button onClick={onDelete} className="p-1.5 rounded text-cyber-muted hover:text-cyber-red hover:bg-cyber-red/10 transition-all">
+            <Trash2 size={14} />
           </button>
         </div>
       </div>
@@ -232,27 +223,15 @@ function FileCard({ file, onDelete }: { file: SecureFile; onDelete: () => void }
 export default function SecureShare() {
   const [files, setFiles] = useState<SecureFile[]>([]);
 
-  const refresh = async () => {
-    try {
-      const data = await getFiles();
-      setFiles(data);
-    } catch (e) {
-      console.error(e);
-    }
-  };
+  const refresh = useCallback(() => {
+    getFiles()
+      .then(setFiles)
+      .catch(err => console.error("Failed to fetch vault files:", err));
+  }, []);
 
   useEffect(() => {
     refresh();
-    const intervalId = setInterval(() => {
-      setFiles(prev => {
-        if (prev.some(f => f.malwareStatus === 'scanning')) {
-          getFiles().then(setFiles).catch(console.error);
-        }
-        return prev;
-      });
-    }, 5000);
-    return () => clearInterval(intervalId);
-  }, []);
+  }, [refresh]);
 
   const stats = {
     total: files.length,
@@ -261,32 +240,33 @@ export default function SecureShare() {
     infected: files.filter(f => f.malwareStatus === 'infected').length,
   };
 
+
   return (
     <div className="space-y-6">
       {/* Header stats */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: 'Vault Total', value: stats.total, color: '#00f5ff' },
-          { label: 'Cipher Blocks', value: stats.encrypted, color: '#7c3aed' },
-          { label: 'Verified Clean', value: stats.clean, color: '#39ff14' },
-          { label: 'Neutralized', value: stats.infected, color: '#ff0040' },
+          { label: 'Total Files', value: stats.total, color: '#00f5ff' },
+          { label: 'Encrypted', value: stats.encrypted, color: '#7c3aed' },
+          { label: 'Clean', value: stats.clean, color: '#39ff14' },
+          { label: 'Quarantined', value: stats.infected, color: '#ff0040' },
         ].map(({ label, value, color }) => (
           <GlowCard key={label} className="p-4 text-center" glowColor={color === '#00f5ff' ? 'cyan' : color === '#7c3aed' ? 'violet' : color === '#39ff14' ? 'green' : 'red'}>
-            <div className="font-orbitron text-2xl font-black mb-1" style={{ color, textShadow: `0 0 15px ${color}40` }}>{value}</div>
-            <div className="text-[10px] font-bold text-cyber-muted uppercase tracking-widest">{label}</div>
+            <div className="font-orbitron text-2xl font-bold mb-1" style={{ color }}>{value}</div>
+            <div className="text-xs text-cyber-muted">{label}</div>
           </GlowCard>
         ))}
       </div>
 
       {/* Upload zone */}
       <GlowCard glowColor="green" className="p-6">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="p-3 rounded-xl bg-cyber-green/10 border border-cyber-green/20">
-            <Share2 className="text-cyber-green" size={24} />
+        <div className="flex items-center gap-3 mb-6">
+          <div className="p-2.5 rounded-xl bg-cyber-green/15 border border-cyber-green/30">
+            <Share2 className="text-cyber-green" size={22} />
           </div>
           <div>
-            <h2 className="font-orbitron text-lg font-bold text-cyber-text tracking-tight uppercase">SecureShare Vault</h2>
-            <p className="text-xs text-cyber-muted font-mono uppercase tracking-tighter opacity-70">Industrial-Grade Cryptographic Tunneling & Forensics</p>
+            <h2 className="font-orbitron text-lg font-bold text-cyber-text">SecureShare Vault</h2>
+            <p className="text-xs text-cyber-muted">AES-256 Encrypted File Sharing with Malware Scanning</p>
           </div>
         </div>
         <UploadZone onUpload={refresh} />
