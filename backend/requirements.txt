@@ -8,6 +8,8 @@ python-multipart==0.0.9
 pydantic[email]==2.7.0
 PyJWT==2.8.0
 cryptography==42.0.5
+passlib[bcrypt]==1.7.4
+requests==2.32.3
 
 # Database (switch to asyncpg for Supabase/PostgreSQL in production)
 # asyncpg==0.29.0
