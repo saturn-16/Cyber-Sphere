@@ -16,18 +16,6 @@ interface AuthStore {
   setLoading: (v: boolean) => void;
 }
 
-// Mock users stored in localStorage for demo purposes
-const MOCK_USERS_KEY = 'cybersphere_users';
-
-function getStoredUsers(): Record<string, { password: string; user: User }> {
-  try { return JSON.parse(localStorage.getItem(MOCK_USERS_KEY) || '{}'); }
-  catch { return {}; }
-}
-
-function generateToken(userId: string): string {
-  const payload = btoa(JSON.stringify({ sub: userId, exp: Date.now() + 86400000 }));
-  return `mock.${payload}.signature`;
-}
 
 export const useAuthStore = create<AuthStore>()(
   persist(

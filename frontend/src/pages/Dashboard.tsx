@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Shield, Share2, Globe, Activity, Clock, Zap,
-  AlertTriangle, TrendingUp, CheckCircle2, ChevronRight,
+  Shield, Share2, Globe, Activity, Zap,
+  CheckCircle2, ChevronRight,
   Database, Mail, Key, ShieldAlert, Cpu
 } from 'lucide-react';
 import GlowCard from '../components/ui/GlowCard';

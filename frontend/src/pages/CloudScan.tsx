@@ -4,7 +4,7 @@ import {
   Globe, Search, Shield, ChevronDown, ChevronUp,
   AlertTriangle, Info, CheckCircle, XCircle, Wifi, Lock,
 } from 'lucide-react';
-import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer, Cell, PieChart, Pie } from 'recharts';
+import { RadarChart, PolarGrid, PolarAngleAxis, Radar, ResponsiveContainer } from 'recharts';
 import GlowCard from '../components/ui/GlowCard';
 import NeonButton from '../components/ui/NeonButton';
 import ScanAnimation from '../components/ui/ScanAnimation';
@@ -160,7 +160,7 @@ export default function CloudScan() {
               className="w-full bg-white/5 border border-cyber-border rounded-lg pl-9 pr-4 py-3 text-sm text-cyber-text placeholder-cyber-muted/50 font-mono transition-all"
               onKeyDown={e => e.key === 'Enter' && !scanning && runScan()} />
           </div>
-          <NeonButton variant="amber" onClick={runScan} loading={scanning} disabled={!domain.trim() || scanning}
+          <NeonButton variant="cyan" onClick={runScan} loading={scanning} disabled={!domain.trim() || scanning}
             icon={<Search size={15} />}>
             Scan Website
           </NeonButton>

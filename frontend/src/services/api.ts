@@ -6,7 +6,6 @@ import type {
   SecureFile,
   DashboardStats,
   ThreatFeedItem,
-  ThreatLevel,
 } from '../types';
 
 // Create Axios instance pointing to FastAPI backend
@@ -36,12 +35,6 @@ API.interceptors.response.use(
 );
 
 
-/* ── Threat level helper ── */
-function scoreToLevel(score: number): ThreatLevel {
-  if (score <= 25) return 'safe';
-  if (score <= 60) return 'suspicious';
-  return 'dangerous';
-}
 
 /* ─────────────────────────────────────────
    PHISHGUARD (Real endpoints calling backend)
@@ -76,7 +69,7 @@ export async function getScanHistory(): Promise<PhishScanResult[]> {
 }
 
 // Keep local helper compatible with other parts of the site that might still call it
-export function saveScanToHistory(result: PhishScanResult) {
+export function saveScanToHistory(_result: PhishScanResult) {
   // Scans are automatically saved by the backend in SQLite, so this is a no-op
 }
 
