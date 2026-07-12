@@ -29,7 +29,7 @@ export const API = axios.create({
 // Interceptor to attach the JWT token to requests if authenticated
 API.interceptors.request.use((config) => {
   const token = useAuthStore.getState().token;
-  if (token && !token.startsWith('mock.')) {
+  if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
   return config;
