@@ -8,8 +8,18 @@ import type {
   ThreatFeedItem,
 } from '../types';
 
-// Detect backend URL dynamically
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+// Detect backend URL dynamically and clean any trailing '/api' prefix to prevent duplicate path issues
+const getCleanBaseURL = () => {
+  let url = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+  if (url.endsWith('/api')) {
+    url = url.substring(0, url.length - 4);
+  } else if (url.endsWith('/api/')) {
+    url = url.substring(0, url.length - 5);
+  }
+  return url;
+};
+
+export const API_BASE_URL = getCleanBaseURL();
 
 // Create Axios instance pointing to FastAPI backend
 export const API = axios.create({
