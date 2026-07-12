@@ -27,32 +27,28 @@ from database import get_connection
 from routers.auth import get_current_user
 from config import settings
 
-# Import extract_features helper from train_model
-try:
-    from train_model import extract_features
-except ImportError:
-    # Inline fallback if import fails
-    def extract_features(url: str) -> list:
-        parsed_url = url
-        if not url.startswith(("http://", "https://")):
-            parsed_url = "http://" + url
-        try:
-            parsed = urlparse(parsed_url)
-            host = parsed.netloc
-        except Exception:
-            host = ""
-        url_len = len(url)
-        num_dots = url.count(".")
-        num_hyphens = url.count("-")
-        num_slashes = url.count("/")
-        num_questions = url.count("?")
-        has_ip = 1 if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", host) else 0
-        has_keyword = 1 if any(kw in url.lower() for kw in {"login", "verify", "secure", "bank", "webscr", "update", "paypal"}) else 0
-        is_shortened = 1 if host.lower() in {"bit.ly", "tinyurl.com", "goo.gl", "t.co"} else 0
-        num_digits = sum(c.isdigit() for c in url)
-        subdomains = host.split(".")
-        num_subdomains = max(0, len(subdomains) - 2) if len(subdomains) > 2 else 0
-        return [url_len, num_dots, num_hyphens, num_slashes, num_questions, has_ip, has_keyword, is_shortened, num_digits, num_subdomains]
+# Lexical feature extraction for URL predictions
+def extract_features(url: str) -> list:
+    parsed_url = url
+    if not url.startswith(("http://", "https://")):
+        parsed_url = "http://" + url
+    try:
+        parsed = urlparse(parsed_url)
+        host = parsed.netloc
+    except Exception:
+        host = ""
+    url_len = len(url)
+    num_dots = url.count(".")
+    num_hyphens = url.count("-")
+    num_slashes = url.count("/")
+    num_questions = url.count("?")
+    has_ip = 1 if re.match(r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}$", host) else 0
+    has_keyword = 1 if any(kw in url.lower() for kw in {"login", "verify", "secure", "bank", "webscr", "update", "paypal"}) else 0
+    is_shortened = 1 if host.lower() in {"bit.ly", "tinyurl.com", "goo.gl", "t.co"} else 0
+    num_digits = sum(c.isdigit() for c in url)
+    subdomains = host.split(".")
+    num_subdomains = max(0, len(subdomains) - 2) if len(subdomains) > 2 else 0
+    return [url_len, num_dots, num_hyphens, num_slashes, num_questions, has_ip, has_keyword, is_shortened, num_digits, num_subdomains]
 
 router = APIRouter()
 
