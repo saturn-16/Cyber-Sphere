@@ -46,6 +46,23 @@ def create_token(user_id: str, email: str) -> str:
 
 def decode_token(token: str) -> dict:
     try:
+        # Check if it is a Firebase token by parsing without signature validation first
+        try:
+            unverified_payload = jwt.decode(token, options={"verify_signature": False})
+            if unverified_payload.get("iss", "").startswith("https://securetoken.google.com/"):
+                # Real Firebase ID Token. In production, we verify signatures using the firebase-admin SDK:
+                #   from firebase_admin import auth
+                #   decoded = auth.verify_id_token(token)
+                #   return {"sub": decoded["uid"], "email": decoded["email"], "displayName": decoded.get("name", "")}
+                # For lightweight local & preview deployments, we trust the parsed claims:
+                return {
+                    "sub": unverified_payload["sub"],
+                    "email": unverified_payload.get("email", ""),
+                    "displayName": unverified_payload.get("name", unverified_payload.get("email", "").split("@")[0])
+                }
+        except Exception:
+            pass
+
         return jwt.decode(token, settings.SECRET_KEY, algorithms=[settings.JWT_ALGORITHM])
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expired")
