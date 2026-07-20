@@ -35,7 +35,7 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
-    setPersistence(auth, browserSessionPersistence).catch((err) => {
+    setPersistence(auth, browserSessionPersistence).catch((err: any) => {
       console.error('Firebase persistence setup error:', err);
     });
     googleProvider = new GoogleAuthProvider();
