@@ -6,6 +6,8 @@ import {
   signInWithPopup,
   signOut,
   onAuthStateChanged,
+  setPersistence,
+  browserSessionPersistence,
 } from 'firebase/auth';
 
 // Firebase configuration from environment variables
@@ -33,6 +35,9 @@ if (isFirebaseConfigured) {
   try {
     app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
     auth = getAuth(app);
+    setPersistence(auth, browserSessionPersistence).catch((err: any) => {
+      console.error('Firebase persistence setup error:', err);
+    });
     googleProvider = new GoogleAuthProvider();
     githubProvider = new GithubAuthProvider();
   } catch (error) {
