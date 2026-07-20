@@ -1,4 +1,6 @@
-import React, { useCallback, useLayoutEffect, useRef, useState } from 'react';
+import React, { useCallback, useLayoutEffect, useRef, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuthStore } from '../../store/authStore';
 import { gsap } from 'gsap';
 import { Zap, ArrowRight } from 'lucide-react';
 import './StaggeredMenu.css';
@@ -53,6 +55,23 @@ export const StaggeredMenu = ({
 }: StaggeredMenuProps) => {
   const [open, setOpen] = useState(false);
   const openRef = useRef(false);
+
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+  const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!profileDropdownOpen) return;
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        setProfileDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, [profileDropdownOpen]);
+
   const panelRef = useRef<HTMLElement | null>(null);
   const preLayersRef = useRef<HTMLDivElement | null>(null);
   const preLayerElsRef = useRef<Element[]>([]);
@@ -444,29 +463,88 @@ export const StaggeredMenu = ({
           </button>
         </div>
 
-        <a
-          href="https://github.com/saturn-16/Cyber-Sphere"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="sm-github-btn"
-          aria-label="View CyberSphere source code on GitHub"
-        >
-          <svg
-            viewBox="0 0 24 24"
-            width="16"
-            height="16"
-            stroke="currentColor"
-            strokeWidth="2"
-            fill="none"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="lucide lucide-github"
+        <div className="flex items-center gap-3">
+          {user && (
+            <div className="relative" ref={dropdownRef}>
+              {/* Profile Trigger Button */}
+              <button
+                onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 hover:border-cyber-cyan/30 active:scale-[0.97] transition-all duration-300 font-mono text-[10px] tracking-wider text-zinc-300 select-none"
+                aria-expanded={profileDropdownOpen}
+                aria-haspopup="true"
+              >
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="" className="w-4.5 h-4.5 rounded-full border border-white/10 object-cover" />
+                ) : (
+                  <div className="w-4.5 h-4.5 rounded-full bg-cyber-cyan/20 border border-cyber-cyan/40 flex items-center justify-center text-cyber-cyan text-[9px] font-bold">
+                    {user.displayName?.charAt(0) || 'O'}
+                  </div>
+                )}
+                <span className="hidden sm:inline max-w-[80px] truncate leading-none">
+                  {user.displayName?.split(' ')[0] || 'Operator'}
+                </span>
+              </button>
+
+              {/* Dropdown Options */}
+              {profileDropdownOpen && (
+                <div className="absolute right-0 top-full mt-2 w-48 rounded-xl border border-white/10 bg-black/90 backdrop-blur-md shadow-2xl p-3 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+                  {/* Profile Summary */}
+                  <div className="px-2 py-1.5">
+                    <div className="text-[10px] text-zinc-400 font-mono truncate font-bold text-white leading-none">
+                      {user.displayName || 'Operator'}
+                    </div>
+                    <div className="text-[8px] text-zinc-500 font-mono truncate mt-1 leading-none">
+                      {user.email}
+                    </div>
+                  </div>
+
+                  <div className="h-[1px] bg-white/5 my-2" />
+
+                  {/* Sign Out Trigger */}
+                  <button
+                    onClick={async () => {
+                      setProfileDropdownOpen(false);
+                      await logout();
+                      navigate('/login');
+                    }}
+                    className="w-full flex items-center justify-between px-2.5 py-2 rounded-lg text-red-400 hover:bg-red-500/10 transition-colors text-[9px] font-mono tracking-wider uppercase font-bold"
+                  >
+                    <span>Sign Out</span>
+                    <svg viewBox="0 0 24 24" width="10" height="10" stroke="currentColor" strokeWidth="2" fill="none" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" />
+                      <polyline points="16 17 21 12 16 7" />
+                      <line x1="21" y1="12" x2="9" y2="12" />
+                    </svg>
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          <a
+            href="https://github.com/saturn-16/Cyber-Sphere"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="sm-github-btn"
+            aria-label="View CyberSphere source code on GitHub"
           >
-            <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
-            <path d="M9 18c-4.51 2-5-2-7-2" />
-          </svg>
-          <ArrowRight size={13} className="sm-github-arrow" />
-        </a>
+            <svg
+              viewBox="0 0 24 24"
+              width="16"
+              height="16"
+              stroke="currentColor"
+              strokeWidth="2"
+              fill="none"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="lucide lucide-github"
+            >
+              <path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.403 5.403 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4" />
+              <path d="M9 18c-4.51 2-5-2-7-2" />
+            </svg>
+            <ArrowRight size={13} className="sm-github-arrow" />
+          </a>
+        </div>
       </header>
 
       <aside id="staggered-menu-panel" ref={panelRef} className="staggered-menu-panel" aria-hidden={!open}>

@@ -1,8 +1,6 @@
 import { create } from 'zustand';
-import axios from 'axios';
-import { API_BASE_URL } from '../services/api';
 import type { User } from '../types';
-
+import { signInWithGoogle, signInWithGithub, logOutFirebase } from '../services/firebase';
 
 interface AuthStore {
   user: User | null;
@@ -10,53 +8,163 @@ interface AuthStore {
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  login: (email: string, password: string) => Promise<void>;
-  signup: (email: string, password: string, displayName: string) => Promise<void>;
-  logout: () => void;
+  loginWithGoogle: () => Promise<void>;
+  loginWithGithub: () => Promise<void>;
+  loginWithRememberedUser: (remembered: any) => Promise<void>;
+  logout: () => Promise<void>;
   setLoading: (v: boolean) => void;
+  setUser: (user: User | null, token: string | null) => void;
 }
 
-
 export const useAuthStore = create<AuthStore>()((set) => ({
-  user: { id: 'demo-user-001', email: 'demo@cybersphere.io', displayName: 'Demo Analyst', createdAt: new Date().toISOString() },
-  token: 'mock-demo-token-xyz',
-  isAuthenticated: true,
+  user: null,
+  token: null,
+  isAuthenticated: false,
   isLoading: false,
 
-  login: async (email, password) => {
+  loginWithGoogle: async () => {
     set({ isLoading: true });
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/login`, { email, password });
+      const fbUser = await signInWithGoogle();
+      // Extract Firebase ID Token if real Firebase is configured, otherwise use fallback sandbox token
+      let token = 'mock-demo-token-xyz';
+      if ('getIdToken' in fbUser && typeof fbUser.getIdToken === 'function') {
+        token = await fbUser.getIdToken();
+      }
+
+      const user: User = {
+        id: fbUser.uid,
+        email: fbUser.email || '',
+        displayName: fbUser.displayName || 'Google User',
+        photoURL: fbUser.photoURL || undefined,
+        createdAt: new Date().toISOString()
+      };
+
+      // Save user to local storage to remember the profile for next sessions
+      localStorage.setItem(
+        'cybersphere_remembered_operator',
+        JSON.stringify({ ...user, provider: 'google' })
+      );
+
       set({
-        user: res.data.user,
-        token: res.data.token,
+        user,
+        token,
         isAuthenticated: true,
         isLoading: false,
       });
     } catch (err: any) {
       set({ isLoading: false });
-      const msg = err.response?.data?.detail || 'Invalid email or password';
-      throw new Error(msg);
+      throw new Error(err.message || 'Failed Google Sign-In');
     }
   },
 
-  signup: async (email, password, displayName) => {
+  loginWithGithub: async () => {
     set({ isLoading: true });
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/auth/register`, { email, password, displayName });
+      const fbUser = await signInWithGithub();
+      let token = 'mock-demo-token-xyz';
+      if ('getIdToken' in fbUser && typeof fbUser.getIdToken === 'function') {
+        token = await fbUser.getIdToken();
+      }
+
+      const user: User = {
+        id: fbUser.uid,
+        email: fbUser.email || '',
+        displayName: fbUser.displayName || 'GitHub User',
+        photoURL: fbUser.photoURL || undefined,
+        createdAt: new Date().toISOString()
+      };
+
+      // Save user to local storage to remember the profile for next sessions
+      localStorage.setItem(
+        'cybersphere_remembered_operator',
+        JSON.stringify({ ...user, provider: 'github' })
+      );
+
       set({
-        user: res.data.user,
-        token: res.data.token,
+        user,
+        token,
         isAuthenticated: true,
         isLoading: false,
       });
     } catch (err: any) {
       set({ isLoading: false });
-      const msg = err.response?.data?.detail || 'An account with this email already exists';
-      throw new Error(msg);
+      throw new Error(err.message || 'Failed GitHub Sign-In');
     }
   },
 
-  logout: () => set({ user: null, token: null, isAuthenticated: false }),
+  loginWithRememberedUser: async (remembered: any) => {
+    set({ isLoading: true });
+    try {
+      const { isFirebaseConfigured } = await import('../services/firebase');
+      if (isFirebaseConfigured) {
+        if (remembered.provider === 'github') {
+          const fbUser = await signInWithGithub();
+          let token = 'mock-demo-token-xyz';
+          if ('getIdToken' in fbUser && typeof fbUser.getIdToken === 'function') {
+            token = await fbUser.getIdToken();
+          }
+          const user: User = {
+            id: fbUser.uid,
+            email: fbUser.email || '',
+            displayName: fbUser.displayName || 'GitHub User',
+            photoURL: fbUser.photoURL || undefined,
+            createdAt: new Date().toISOString()
+          };
+          localStorage.setItem(
+            'cybersphere_remembered_operator',
+            JSON.stringify({ ...user, provider: 'github' })
+          );
+          set({ user, token, isAuthenticated: true, isLoading: false });
+        } else {
+          const fbUser = await signInWithGoogle();
+          let token = 'mock-demo-token-xyz';
+          if ('getIdToken' in fbUser && typeof fbUser.getIdToken === 'function') {
+            token = await fbUser.getIdToken();
+          }
+          const user: User = {
+            id: fbUser.uid,
+            email: fbUser.email || '',
+            displayName: fbUser.displayName || 'Google User',
+            photoURL: fbUser.photoURL || undefined,
+            createdAt: new Date().toISOString()
+          };
+          localStorage.setItem(
+            'cybersphere_remembered_operator',
+            JSON.stringify({ ...user, provider: 'google' })
+          );
+          set({ user, token, isAuthenticated: true, isLoading: false });
+        }
+      } else {
+        // Fallback for developer sandbox mode
+        set({
+          user: {
+            id: remembered.id,
+            email: remembered.email,
+            displayName: remembered.displayName,
+            photoURL: remembered.photoURL,
+            createdAt: remembered.createdAt || new Date().toISOString()
+          },
+          token: 'mock-demo-token-xyz',
+          isAuthenticated: true,
+          isLoading: false
+        });
+      }
+    } catch (err: any) {
+      set({ isLoading: false });
+      throw new Error(err.message || 'Failed to login with remembered account');
+    }
+  },
+
+  logout: async () => {
+    try {
+      await logOutFirebase();
+    } catch (e) {
+      console.error('Firebase signout error:', e);
+    }
+    set({ user: null, token: null, isAuthenticated: false });
+  },
+
   setLoading: (v) => set({ isLoading: v }),
+  setUser: (user, token) => set({ user, token, isAuthenticated: !!user }),
 }));
