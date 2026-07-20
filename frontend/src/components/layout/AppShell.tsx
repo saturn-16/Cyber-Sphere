@@ -1,15 +1,26 @@
 import { Outlet, useNavigate } from 'react-router-dom';
 import StaggeredMenu from '../ui/StaggeredMenu';
 import PixelSnow from '../ui/PixelSnow';
+import { useAuthStore } from '../../store/authStore';
 
 export default function AppShell() {
   const navigate = useNavigate();
+  const { logout } = useAuthStore();
 
   const menuItems = [
     { label: 'Dashboard', ariaLabel: 'Go to dashboard overview', link: '/dashboard', onClick: () => navigate('/dashboard') },
     { label: 'PhishGuard', ariaLabel: 'Detect phishing links', link: '/phishguard', onClick: () => navigate('/phishguard') },
     { label: 'SecureShare', ariaLabel: 'Share files securely', link: '/secureshare', onClick: () => navigate('/secureshare') },
-    { label: 'CloudScan', ariaLabel: 'Audit website headers', link: '/cloudscan', onClick: () => navigate('/cloudscan') }
+    { label: 'CloudScan', ariaLabel: 'Audit website headers', link: '/cloudscan', onClick: () => navigate('/cloudscan') },
+    { 
+      label: 'Logout', 
+      ariaLabel: 'Logout from session', 
+      link: '/login', 
+      onClick: async () => {
+        await logout();
+        navigate('/login');
+      } 
+    }
   ];
 
   const socialItems = [

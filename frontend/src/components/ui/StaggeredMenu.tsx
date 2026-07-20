@@ -469,14 +469,14 @@ export const StaggeredMenu = ({
               {/* Profile Trigger Button */}
               <button
                 onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-white/5 bg-white/5 hover:bg-white/10 hover:border-cyber-cyan/30 active:scale-[0.97] transition-all duration-300 font-mono text-[10px] tracking-wider text-zinc-300 select-none"
+                className="inline-flex items-center gap-2 bg-white/3 border border-white/8 hover:border-cyber-cyan/45 hover:bg-white/8 hover:text-white rounded-full px-3 h-[34px] transition-all duration-250 hover:shadow-[0_0_15px_rgba(0,245,255,0.15)] font-mono text-[10px] tracking-wider text-zinc-400 select-none cursor-pointer active:scale-[0.97] box-border"
                 aria-expanded={profileDropdownOpen}
                 aria-haspopup="true"
               >
                 {user.photoURL ? (
-                  <img src={user.photoURL} alt="" className="w-4.5 h-4.5 rounded-full border border-white/10 object-cover" />
+                  <img src={user.photoURL} alt="" className="w-5 h-5 rounded-full border border-white/10 object-cover flex-shrink-0" />
                 ) : (
-                  <div className="w-4.5 h-4.5 rounded-full bg-cyber-cyan/20 border border-cyber-cyan/40 flex items-center justify-center text-cyber-cyan text-[9px] font-bold">
+                  <div className="w-5 h-5 rounded-full bg-cyber-cyan/20 border border-cyber-cyan/40 flex items-center justify-center text-cyber-cyan text-[9px] font-bold flex-shrink-0">
                     {user.displayName?.charAt(0) || 'O'}
                   </div>
                 )}
